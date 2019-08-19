@@ -2,26 +2,40 @@ pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
 function _init()
-	printh("***************")
-	local circle = {
+	--printh("******")
+	circle = {
 		pos = {x=64, y=64}, 
 		rad = 24, 
 		pts = 16, 
 		st_deg = 0, end_deg = 360
 	}
-	local enemies = rnd_pts(64)
+	enemies = rnd_pts(64)
+end
 
-	for k,enm in pairs(enemies) do
-		if is_pt_circ_col(enm.pos, circle) then
-			enm["col"] = true
-		end
-	end
+function _update()
+	move_circle()
+	flag_collisions()
+end
 
+function _draw()
 	cls()
 	draw_circle(circle)
 	draw_pts(enemies)
 end
 -->8
+function move_circle()
+	if (btn(0) and circle.pos.x > 0) circle.pos.x -= 1
+	if (btn(1) and circle.pos.x < 127) circle.pos.x += 1
+	if (btn(2) and circle.pos.y > 0) circle.pos.y -= 1
+	if (btn(3) and circle.pos.y < 127) circle.pos.y += 1
+end
+
+function flag_collisions()
+	for k,enm in pairs(enemies) do
+		enm["col"] = is_pt_circ_col(enm.pos, circle)
+	end
+end
+
 function rnd_pts(cnt)
 	local pts = {}
 	for i = 0, cnt do
