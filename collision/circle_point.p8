@@ -60,7 +60,7 @@ end
 function draw_pts(pts)
 	for k,pt in pairs(pts) do
 		local rnd_col_id = flr(rnd(4)) + 1
-		local col_id = pt["col"] == true and 8 or rnd_col_id
+		local col_id = pt["col"] == true and 8 or rnd_col_id -- col_id = pt['col'] ? 8 : rnd_col_id
 
 		pset(pt.pos.x, pt.pos.y, col_id)
 	end
