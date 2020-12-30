@@ -7,8 +7,8 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	--levels[1]="x5b"
-	levels[1]="////x4b/s9s"
+	levels[1]="b9b/p4x2b2"
+	--levels[1]="////x4b/s9s"
 	--levels[2]="bxhxexixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 end
@@ -80,9 +80,9 @@ function makebricks(lvl)
 	brick_v={}
 	brick_t={}
 	brick_col={
-	["b"]=14,["i"]=6,["h"]=15,
-	["s"]=9,["p"]=12,["z"]=8,
-	["zz"]=8}
+		["b"]=14,["i"]=6,["h"]=15,
+		["s"]=9,["p"]=12,["z"]=8,
+		["zz"]=8}
 	
 	--brick types
 	--b=normal
@@ -126,6 +126,13 @@ function makebricks(lvl)
 	end
 end
 
+function resetpowerups()
+	pup_x={}
+	pup_y={}
+	pup_v={}
+	pup_t={}
+end
+
 function addbrick(i,t)
 	add(brick_x,4+((i-1)%11)*(brick_w+2))
 	add(brick_y,20+flr((i-1)/11)*(brick_h+2))
@@ -149,6 +156,7 @@ function serveball()
 	ball_ang=1
 	combo_mult=1
 	sticky=true
+	resetpowerups()
 end
 
 function setangle(ang)
@@ -187,6 +195,24 @@ function ball_box(bx,by,box_x,box_y,box_w,box_h)
 		return false
 	end
 	if bx+ball_r < box_x then
+		return false
+	end
+	
+	return true
+end
+
+function box_box(box_x,box_y,box_w,box_h,box2_x,box2_y,box2_w,box2_h)
+	if box_y > box2_y+box2_h then
+		return false
+	end
+	if box_y+box_h < box2_y then
+		return false
+	end
+	
+	if box_x > box2_x+box2_w then
+		return false
+	end
+	if box_x+box_w < box2_x then
 		return false
 	end
 	
@@ -285,6 +311,13 @@ function draw_game()
 	for i=1,#brick_x do
 		if brick_v[i] then
 			rectfill(brick_x[i],brick_y[i],brick_x[i]+brick_w,brick_y[i]+brick_h,brick_col[brick_t[i]])
+		end
+	end
+	
+	--draw powerups
+	for i=1,#pup_x do
+		if pup_v[i] then
+			spr(1,pup_x[i],pup_y[i])
 		end
 	end
 	
@@ -464,6 +497,20 @@ function update_game()
 	ball_x = nextx
 	ball_y = nexty
 	
+	--move powerups
+	for i=1,#pup_x do
+		if pup_v[i] then
+			pup_y[i]+=.5
+			if pup_y[i]>127 then
+				pup_v[i]=false
+			end
+			if box_box(pup_x[i],pup_y[i],8,6,pad_x,pad_y,pad_w,pad_h) then
+				pup_v[i]=false
+				--todo:apply powerup
+			end
+		end
+	end
+	
 	checkexplosions()
 	
 	if nexty>127 then
@@ -505,8 +552,8 @@ function hitbrick(i,combo)
 			points+=10*combo_mult
 			combo_mult+=1
 			combo_mult=mid(1,combo_mult,6)
-			--todo:trigger powerup
 		end
+		spawnpill(brick_x[i],brick_y[i],"s")	
 	elseif brick=="s" then
 		sfx(1+combo_mult)
 		brick_t[i]="zz"
@@ -516,6 +563,13 @@ function hitbrick(i,combo)
 			combo_mult=mid(1,combo_mult,6)
 		end
 	end
+end
+
+function spawnpill(x,y,t)
+	pup_x[#pup_x+1]=x
+	pup_y[#pup_x]=y
+	pup_v[#pup_x]=true
+	pup_t[#pup_x]=t
 end
 
 function checkexplosions()
@@ -550,12 +604,12 @@ function explodebrick(i)
 	end
 end
 __gfx__
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000ffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000f99989990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700999899990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000999989990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000999899990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700099999900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 0000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
