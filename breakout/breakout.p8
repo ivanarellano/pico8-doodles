@@ -9,7 +9,7 @@ function _init()
 	levels={}
 	levels[1]="x5b"
 	--levels[2]="x4b"
-	levels[2]="bxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
+	levels[2]="bxhxexixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 end
 
@@ -78,27 +78,42 @@ function makebricks(lvl)
 	brick_x={}
 	brick_y={}
 	brick_v={}
+	brick_t={}
+	brick_col={
+	["b"]=14,["i"]=15,["h"]=6,
+	["e"]=10,["p"]=12}
+	--brick types
+	--b=normal
+	--i=indestructible
+	--h=hardened
+	--e=exploding
+	--p=powerup
 	
 	j=0
 	for i=1,#lvl do
 		j+=1
 		char=sub(lvl,i,i)
-		if char=="b" then
-			last="b"
-			add(brick_x,4+((j-1)%11)*(brick_w+2))
-			add(brick_y,20+flr((j-1)/11)*(brick_h+2))
-			add(brick_v,true)
+		if char=="b" 
+		or char=="i" 
+		or char=="h"
+		or char=="e"
+		or char=="s"
+		or char=="p" then
+			last=char
+			addbrick(j,char)
 		elseif char=="x" then
 			last="x"
 		elseif char=="/" then
 			j=(flr((j-1)/11)+1)*11
 		elseif char>="0" and char<="9" then
-			--debug=char
 			for o=1,char-1 do
-				if last=="b" then
-					add(brick_x,4+((j-1)%11)*(brick_w+2))
-					add(brick_y,20+flr((j-1)/11)*(brick_h+2))
-					add(brick_v,true)
+				if last=="b" 
+				or last=="i" 
+				or last=="h"
+				or last=="e"
+				or last=="s"
+				or last=="p" then
+					addbrick(j,last)
 				elseif last=="x" then
 					--do nothing
 				end
@@ -107,6 +122,13 @@ function makebricks(lvl)
 			j-=1
 		end
 	end
+end
+
+function addbrick(i,t)
+	add(brick_x,4+((i-1)%11)*(brick_w+2))
+	add(brick_y,20+flr((i-1)/11)*(brick_h+2))
+	add(brick_v,true)
+	add(brick_t,t)
 end
 
 function gameover()
@@ -118,12 +140,12 @@ function levelover()
 end
 
 function serveball()
-	ball_x = pad_x+flr(pad_w/2)
-	ball_y = pad_y-ball_r
-	ball_dx = 1
-	ball_dy = -1
-	ball_ang = 1
-	combo_mult = 1
+	ball_x=pad_x+flr(pad_w/2)
+	ball_y=pad_y-ball_r
+	ball_dx=1
+	ball_dy=-1
+	ball_ang=1
+	combo_mult=1
 	sticky=true
 end
 
@@ -260,7 +282,7 @@ function draw_game()
 	--draw bricks
 	for i=1,#brick_x do
 		if brick_v[i] then
-			rectfill(brick_x[i],brick_y[i],brick_x[i]+brick_w,brick_y[i]+brick_h,14)
+			rectfill(brick_x[i],brick_y[i],brick_x[i]+brick_w,brick_y[i]+brick_h,brick_col[brick_t[i]])
 		end
 	end
 	
