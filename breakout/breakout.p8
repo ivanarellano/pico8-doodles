@@ -7,9 +7,9 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	levels[1]="x5b"
-	--levels[2]="x4b"
-	levels[2]="bxhxexixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
+	--levels[1]="x5b"
+	levels[1]="////x4b/s9s"
+	--levels[2]="bxhxexixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 end
 
@@ -66,7 +66,7 @@ end
 
 function levelfinished()
 	for i=1,#brick_v do
-		if brick_v[i]==true then
+		if brick_v[i]==true and brick_t[i]!="i" then
 			return false
 		end
 	end
@@ -80,8 +80,10 @@ function makebricks(lvl)
 	brick_v={}
 	brick_t={}
 	brick_col={
-	["b"]=14,["i"]=15,["h"]=6,
-	["e"]=10,["p"]=12}
+	["b"]=14,["i"]=6,["h"]=15,
+	["s"]=9,["p"]=12,["z"]=8,
+	["zz"]=8}
+	
 	--brick types
 	--b=normal
 	--i=indestructible
@@ -455,21 +457,14 @@ function update_game()
 			end
 			
 			brickhit=true
-			sfx(1+combo_mult)
-			brick_v[i]=false
-			points+=10*combo_mult
-			combo_mult+=1
-			combo_mult=mid(1,combo_mult,6)
-			
-			if levelfinished() then
-				_draw()
-				levelover()
-			end
+			hitbrick(i,true)
 		end
 	end
 
 	ball_x = nextx
 	ball_y = nexty
+	
+	checkexplosions()
 	
 	if nexty>127 then
 		sfx(0)
@@ -478,6 +473,79 @@ function update_game()
 			gameover()
 		else
 			serveball()
+		end
+	end
+	
+	if levelfinished() then
+		_draw()
+		levelover()
+	end
+end
+
+function hitbrick(i,combo)
+	local brick=brick_t[i]
+	
+	if brick=="b" then
+		sfx(1+combo_mult)
+		brick_v[i]=false
+		if combo then
+			points+=10*combo_mult
+			combo_mult+=1
+			combo_mult=mid(1,combo_mult,6)
+		end
+	elseif brick=="i" then
+		sfx(8)
+	elseif brick=="h" then
+		sfx(8)
+		brick_t[i]="b"
+	elseif brick=="p" then
+		sfx(1+combo_mult)
+		brick_v[i]=false
+		if combo then
+			points+=10*combo_mult
+			combo_mult+=1
+			combo_mult=mid(1,combo_mult,6)
+			--todo:trigger powerup
+		end
+	elseif brick=="s" then
+		sfx(1+combo_mult)
+		brick_t[i]="zz"
+		if combo then
+			points+=10*combo_mult
+			combo_mult+=1
+			combo_mult=mid(1,combo_mult,6)
+		end
+	end
+end
+
+function checkexplosions()
+	for i=1,#brick_x do
+		if brick_t[i]=="zz" then
+			brick_t[i]="z"
+		end
+	end
+	
+	for i=1,#brick_x do
+		if brick_t[i]=="z" then
+			explodebrick(i)
+		end
+	end
+	
+	for i=1,#brick_x do
+		if brick_t[i]=="zz" then
+			brick_t[i]="z"
+		end
+	end
+end
+
+function explodebrick(i)
+	brick_v[i]=false
+	
+	for j=1,#brick_x do
+		if j!=i and brick_v[j]
+		and abs(brick_x[j]-brick_x[i]) <= brick_w+2
+		and abs(brick_y[j]-brick_y[i]) <= brick_h+2 then
+			hitbrick(j,false)
 		end
 	end
 end
@@ -499,3 +567,4 @@ __sfx__
 0001000029150291502d1502d1503115031150351503d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000100002c1502c15030150311503415033150391503d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000100002b4502b4502f4502f4503645036450383003d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
+000600000e1501b1501a7000050000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
