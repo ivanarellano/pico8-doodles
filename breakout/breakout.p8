@@ -4,6 +4,8 @@ __lua__
 function _init()
 	cls()
 	mode="start"
+	level="b6/x1b1/b8/b9"
+	debug=""
 end
 
 function startgame()
@@ -12,7 +14,6 @@ function startgame()
 	combo_mult=1
 	
 	ball_r=2
-	ball_dr=0.5
 	
 	pad_x=30
 	pad_y=120
@@ -23,7 +24,7 @@ function startgame()
 	brick_w=9
 	brick_h=4
 	
-	makebricks()
+	makebricks(level)
 	
 	lives=3
 	points=0
@@ -33,17 +34,39 @@ function startgame()
 	serveball()
 end
 
-function makebricks()
-	local i
+function makebricks(lvl)
+	local i,j,char,last
 	brick_x={}
 	brick_y={}
 	brick_v={}
 	
-	for i=1,66 do
-		add(brick_x,4+((i-1)%11)*(brick_w+2))
-
-		add(brick_y,20+flr((i-1)/11)*(brick_h+2))
-		add(brick_v,true)
+	j=0
+	for i=1,#lvl do
+		j+=1
+		char=sub(lvl,i,i)
+		if char=="b" then
+			last="b"
+			add(brick_x,4+((j-1)%11)*(brick_w+2))
+			add(brick_y,20+flr((j-1)/11)*(brick_h+2))
+			add(brick_v,true)
+		elseif char=="x" then
+			last="x"
+		elseif char=="/" then
+			j=(flr((j-1)/11)+1)*11
+		elseif char>="0" and char<="9" then
+			--debug=char
+			for o=1,char-1 do
+				if last=="b" then
+					add(brick_x,4+((j-1)%11)*(brick_w+2))
+					add(brick_y,20+flr((j-1)/11)*(brick_h+2))
+					add(brick_v,true)
+				elseif last=="x" then
+					--do nothing
+				end
+				j+=1
+			end
+			j-=1
+		end
 	end
 end
 
@@ -197,13 +220,18 @@ function draw_game()
 	end
 	
 	rectfill(0,0,128,7,0)
+	if debug!="" then
+		print(debug,1,1,7)
+		return
+	end
+	
 	print("lives:"..lives,1,1,7)
 	print("score:"..points,40,1,7)
+	
 	local combo_str=""
 	if combo_mult>1 then
 		combo_str=""..combo_mult.."x"
 	end
-	
 	print("combo:"..combo_str,80,1,7)
 end
 
@@ -348,7 +376,8 @@ function update_game()
 			sfx(1+combo_mult)
 			brick_v[i]=false
 			points+=10*combo_mult
-			combo_mult+=mid(1,combo_mult,7)
+			combo_mult+=1
+			combo_mult=mid(1,combo_mult,6)
 		end
 	end
 
@@ -377,7 +406,7 @@ __map__
 __sfx__
 00100000110501105012050120200c0100a0500d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00010000190501205011050120501f0501f05021050210501c0500e050090500a00003000000000b0002870000000000000000000000000000000000000000000000000000000000000000000000000000000000
-010100001805010050150501505015050170501f0502800028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
+000100001805010050150501505015050170501f0502800028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 00010000240501c050210502105021050230502b0502800028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000100002a050280502d0502d0502d0502f050370502800028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 0001000029150291502d1502d1503115031150351503d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
