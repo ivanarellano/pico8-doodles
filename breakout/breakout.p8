@@ -4,7 +4,12 @@ __lua__
 function _init()
 	cls()
 	mode="start"
-	level="b6/x1b1/b8/b9"
+	level=""
+	levelnum=1
+	levels={}
+	levels[1]="x5b"
+	--levels[2]="x4b"
+	levels[2]="bxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 end
 
@@ -12,6 +17,8 @@ function startgame()
 	mode="game"
 	
 	combo_mult=1
+	levelnum=1
+	level=levels[levelnum]
 	
 	ball_r=2
 	
@@ -32,6 +39,38 @@ function startgame()
 	sticky=true
 	
 	serveball()
+end
+
+function nextlevel()
+	mode="game"
+	
+	combo_mult=1
+	sticky=true
+	pad_x=30
+	pad_y=120
+	pad_dx=0
+	
+	levelnum+=1
+	if levelnum>#levels then
+		--finished game
+		mode="start"
+		return
+	end
+	
+	level=levels[levelnum]
+	
+	makebricks(level)
+	
+	serveball()
+end
+
+function levelfinished()
+	for i=1,#brick_v do
+		if brick_v[i]==true then
+			return false
+		end
+	end
+	return true
 end
 
 function makebricks(lvl)
@@ -72,6 +111,10 @@ end
 
 function gameover()
 	mode="gameover"
+end
+
+function levelover()
+	mode="levelover"
 end
 
 function serveball()
@@ -197,6 +240,8 @@ function _draw()
 		draw_start()
 	elseif mode=="gameover" then
 		draw_gameover()
+	elseif mode=="levelover" then
+		draw_levelover()
 	end
 end
 
@@ -246,6 +291,12 @@ function draw_gameover()
 	print("game over",46,62,7)
 	print("press ❎ to restart",27,70,7)
 end
+
+function draw_levelover()
+	rectfill(0,60,128,76,0)
+	print("stage clear",46,62,7)
+	print("press ❎ to continue",27,70,7)
+end
 -->8
 function _update60()
 	if mode=="game" then
@@ -254,6 +305,8 @@ function _update60()
 		update_start()
 	elseif mode=="gameover" then
 		update_gameover()
+	elseif mode=="levelover" then
+		update_levelover()
 	end
 end
 
@@ -264,8 +317,14 @@ function update_start()
 end
 
 function update_gameover()
-	if btn(5) then
+	if btnp(5) then
 		startgame()
+	end
+end
+
+function update_levelover()
+	if btnp(5) then
+		nextlevel()
 	end
 end
 
@@ -372,12 +431,18 @@ function update_game()
 			else
 				ball_dy = -ball_dy
 			end
+			
 			brickhit=true
 			sfx(1+combo_mult)
 			brick_v[i]=false
 			points+=10*combo_mult
 			combo_mult+=1
 			combo_mult=mid(1,combo_mult,6)
+			
+			if levelfinished() then
+				_draw()
+				levelover()
+			end
 		end
 	end
 
