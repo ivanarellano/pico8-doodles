@@ -7,7 +7,7 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	levels[1]="b9b/p9"
+	levels[1]="p9/p9"
 	--levels[1]="////x4b/s9s"
 	--levels[2]="bxhxexixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
@@ -156,6 +156,9 @@ function serveball()
 	ball_ang=1
 	combo_mult=1
 	sticky=true
+	catch=false
+	powerup=0
+	powerup_t=0
 	resetpowerups()
 end
 
@@ -320,10 +323,10 @@ function draw_game()
 			if pup_t[i]==5 then
 				palt(0,false)
 				palt(11,true)
-			else
-				spr(pup_t[i],pup_x[i],pup_y[i])
-				palt()
 			end
+			
+			spr(pup_t[i],pup_x[i],pup_y[i])
+			palt()
 		end
 	end
 	
@@ -418,6 +421,37 @@ function update_game()
 	pad_x+=pad_dx
 	pad_x=mid(0,pad_x,127-pad_w)
 	
+	--move powerups
+	for i=1,#pup_x do
+		if pup_v[i] then
+			pup_y[i]+=.5
+			--check coll for powerup
+			if pup_y[i]>127 then
+				pup_v[i]=false
+			end
+			if box_box(pup_x[i],pup_y[i],8,6,pad_x,pad_y,pad_w,pad_h) then
+				pup_v[i]=false
+				applypower(pup_t[i])
+				sfx(1)
+			end
+		end
+	end
+	
+	if levelfinished() then
+		_draw()
+		levelover()
+	end
+	
+	--powerup timer
+	if powerup!=0 then
+		powerup_t-=1
+		if powerup_t<=0 then
+			powerup=0
+		end
+	end
+	
+	checkexplosions()
+	
 	if sticky then
 		ball_x = pad_x+flr(pad_w/2)
 		ball_y = pad_y-ball_r-1
@@ -480,6 +514,10 @@ function update_game()
 		end
 		sfx(1)
 		combo_mult=1
+		--catch
+		if powerup==3 then
+			sticky=true
+		end
 	end
 	
 	brickhit=false
@@ -503,24 +541,7 @@ function update_game()
 	ball_x = nextx
 	ball_y = nexty
 	
-	--move powerups
-	for i=1,#pup_x do
-		if pup_v[i] then
-			pup_y[i]+=.5
-			--check coll for powerup
-			if pup_y[i]>127 then
-				pup_v[i]=false
-			end
-			if box_box(pup_x[i],pup_y[i],8,6,pad_x,pad_y,pad_w,pad_h) then
-				pup_v[i]=false
-				--todo:apply powerup
-				sfx(1)
-			end
-		end
-	end
-	
-	checkexplosions()
-	
+	--ball missed paddle
 	if nexty>127 then
 		sfx(0)
 		lives-=1
@@ -530,10 +551,38 @@ function update_game()
 			serveball()
 		end
 	end
-	
-	if levelfinished() then
-		_draw()
-		levelover()
+end
+
+function applypower(p)
+	if p==1 then
+		--slowdown
+		powerup=1
+		powerup_t=0
+	elseif p==2 then
+		--life
+		powerup=2
+		powerup_t=0
+		lives+=1
+	elseif p==3 then
+		--catch
+		powerup=3
+		powerup_t=600 --60fps*10sec
+	elseif p==4 then
+		--expand
+		powerup=4
+		powerup_t=0
+	elseif p==5 then
+		--reduce
+		powerup=5
+		powerup_t=0
+	elseif p==6 then
+		--megaball
+		powerup=6
+		powerup_t=0
+	elseif p==7 then
+		--multiball
+		powerup=7
+		powerup_t=0
 	end
 end
 
