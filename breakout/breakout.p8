@@ -7,7 +7,7 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	levels[1]="p9/p9"
+	levels[1]="h9/h9/i3p6"
 	--levels[1]="////x4b/s9s"
 	--levels[2]="bxhxexixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
@@ -548,11 +548,14 @@ function update_game()
 		
 		-- check if ball hit brick
 		if brick_v[i] and ball_box(nextx,nexty,brick_x[i],brick_y[i],brick_w,brick_h) then
+			if powerup==6 and brick_t[i]=="i"
+			or powerup!=6 then
 			-- find out in which direction to deflect
-			if deflx_ball_box(ball_x,ball_y,ball_dx,ball_dy,brick_x[i],brick_y[i],brick_w,brick_h) then
-				ball_dx = -ball_dx
-			else
-				ball_dy = -ball_dy
+				if deflx_ball_box(ball_x,ball_y,ball_dx,ball_dy,brick_x[i],brick_y[i],brick_w,brick_h) then
+					ball_dx = -ball_dx
+				else
+					ball_dy = -ball_dy
+				end
 			end
 			
 			brickhit=true
@@ -573,8 +576,6 @@ function update_game()
 			serveball()
 		end
 	end
-	
-	debug=powerup
 end
 
 function applypower(p)
@@ -614,6 +615,7 @@ function hitbrick(i,combo)
 	local brick=brick_t[i]
 	
 	if brick=="b" then
+		--brick
 		sfx(1+combo_mult)
 		brick_v[i]=false
 		if combo then
@@ -622,11 +624,24 @@ function hitbrick(i,combo)
 			combo_mult=mid(1,combo_mult,6)
 		end
 	elseif brick=="i" then
+		--indestructible
 		sfx(8)
 	elseif brick=="h" then
-		sfx(8)
-		brick_t[i]="b"
+		--hardened
+		if powerup==6 then
+			sfx(1+combo_mult)
+			brick_v[i]=false
+		if combo then
+			points+=10*combo_mult*points_mult
+			combo_mult+=1
+			combo_mult=mid(1,combo_mult,6)
+		end
+		else
+			sfx(8)
+			brick_t[i]="b"
+		end
 	elseif brick=="p" then
+		--powerup
 		sfx(1+combo_mult)
 		brick_v[i]=false
 		if combo then
@@ -636,6 +651,7 @@ function hitbrick(i,combo)
 		end
 		spawnpowerup(brick_x[i],brick_y[i])	
 	elseif brick=="s" then
+		--exploding
 		sfx(1+combo_mult)
 		brick_t[i]="zz"
 		if combo then
