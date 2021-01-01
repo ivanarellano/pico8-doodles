@@ -473,10 +473,15 @@ function update_game()
 		return
 	end
 	
+	if powerup==1 then	
 	-- calculate next pos
 	-- before applying to ball
-	nextx = ball_x + ball_dx
-	nexty = ball_y + ball_dy
+		nextx = ball_x + (ball_dx/2)
+		nexty = ball_y + (ball_dy/2)
+	else
+		nextx = ball_x + ball_dx
+		nexty = ball_y + ball_dy
+	end
 
 	if nextx>124 or nextx<3 then
 		nextx=mid(0,nextx,127) --clamp
@@ -576,11 +581,11 @@ function applypower(p)
 	if p==1 then
 		--slowdown
 		powerup=1
-		powerup_t=0
+		powerup_t=900
 	elseif p==2 then
 		--life
 		powerup=2
-		powerup_t=0
+		powerup_t=900
 		lives+=1
 	elseif p==3 then
 		--catch
@@ -597,11 +602,11 @@ function applypower(p)
 	elseif p==6 then
 		--megaball
 		powerup=6
-		powerup_t=0
+		powerup_t=900
 	elseif p==7 then
 		--multiball
 		powerup=7
-		powerup_t=0
+		powerup_t=900
 	end
 end
 
