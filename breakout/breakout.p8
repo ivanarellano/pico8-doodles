@@ -24,7 +24,8 @@ function startgame()
 	
 	pad_x=30
 	pad_y=120
-	pad_w=25
+	pad_w=24
+	pad_wo=24 --og width
 	pad_h=4
 	pad_dx=0
 	
@@ -155,8 +156,9 @@ function serveball()
 	ball_dy=-1
 	ball_ang=1
 	combo_mult=1
+	points_mult=1
 	sticky=true
-	catch=false
+	sticky_x=flr(pad_w/2)
 	powerup=0
 	powerup_t=0
 	resetpowerups()
@@ -399,6 +401,18 @@ function update_game()
 	local nextx,nexty
 	local brickhit
 	
+	if powerup==4 then
+		--pad expand
+		pad_w=flr(pad_wo*1.5)
+	elseif powerup==5 then
+		--pad reduce
+		pad_w=flr(pad_wo/2)
+		points_mult=2
+	else
+		pad_w=pad_wo
+		points_mult=1
+	end
+	
 	if btn(0) and pad_x>0 then
 		pad_dx = -2.5
 		btn_press = true
@@ -412,6 +426,7 @@ function update_game()
 	
 	if sticky and btnp(5) then
 		sticky=false
+		ball_x=mid(3,ball_x,124)
 	end
 	
 	if not btn_press then
@@ -453,8 +468,8 @@ function update_game()
 	checkexplosions()
 	
 	if sticky then
-		ball_x = pad_x+flr(pad_w/2)
-		ball_y = pad_y-ball_r-1
+		ball_x=pad_x+sticky_x
+		ball_y=pad_y-ball_r-1
 		return
 	end
 	
@@ -514,9 +529,11 @@ function update_game()
 		end
 		sfx(1)
 		combo_mult=1
+		
 		--catch
-		if powerup==3 then
+		if powerup==3 and ball_dy<0 then
 			sticky=true
+			sticky_x=ball_x-pad_x
 		end
 	end
 	
@@ -551,6 +568,8 @@ function update_game()
 			serveball()
 		end
 	end
+	
+	debug=powerup
 end
 
 function applypower(p)
@@ -566,15 +585,15 @@ function applypower(p)
 	elseif p==3 then
 		--catch
 		powerup=3
-		powerup_t=600 --60fps*10sec
+		powerup_t=900 --60fps*10sec
 	elseif p==4 then
 		--expand
 		powerup=4
-		powerup_t=0
+		powerup_t=900
 	elseif p==5 then
 		--reduce
 		powerup=5
-		powerup_t=0
+		powerup_t=900
 	elseif p==6 then
 		--megaball
 		powerup=6
@@ -593,7 +612,7 @@ function hitbrick(i,combo)
 		sfx(1+combo_mult)
 		brick_v[i]=false
 		if combo then
-			points+=10*combo_mult
+			points+=10*combo_mult*points_mult
 			combo_mult+=1
 			combo_mult=mid(1,combo_mult,6)
 		end
@@ -606,7 +625,7 @@ function hitbrick(i,combo)
 		sfx(1+combo_mult)
 		brick_v[i]=false
 		if combo then
-			points+=10*combo_mult
+			points+=10*combo_mult*points_mult
 			combo_mult+=1
 			combo_mult=mid(1,combo_mult,6)
 		end
@@ -615,7 +634,7 @@ function hitbrick(i,combo)
 		sfx(1+combo_mult)
 		brick_t[i]="zz"
 		if combo then
-			points+=10*combo_mult
+			points+=10*combo_mult*points_mult
 			combo_mult+=1
 			combo_mult=mid(1,combo_mult,6)
 		end
