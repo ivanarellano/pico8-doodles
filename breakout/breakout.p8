@@ -66,8 +66,8 @@ function nextlevel()
 end
 
 function levelfinished()
-	for i=1,#brick_v do
-		if brick_v[i]==true and brick_t[i]!="i" then
+	for brick in all(bricks) do
+		if brick.v and brick.t!="i" then
 			return false
 		end
 	end
@@ -76,10 +76,7 @@ end
 
 function makebricks(lvl)
 	local i,j,char,last
-	brick_x={}
-	brick_y={}
-	brick_v={}
-	brick_t={}
+	bricks={}
 	brick_col={
 		["b"]=14,["i"]=6,["h"]=15,
 		["s"]=9,["p"]=12,["z"]=8,
@@ -127,18 +124,13 @@ function makebricks(lvl)
 	end
 end
 
-function resetpowerups()
-	pup_x={}
-	pup_y={}
-	pup_v={}
-	pup_t={}
-end
-
 function addbrick(i,t)
-	add(brick_x,4+((i-1)%11)*(brick_w+2))
-	add(brick_y,20+flr((i-1)/11)*(brick_h+2))
-	add(brick_v,true)
-	add(brick_t,t)
+	local tmp_brick={}
+	tmp_brick.x=4+((i-1)%11)*(brick_w+2)
+	tmp_brick.y=20+flr((i-1)/11)*(brick_h+2)
+	tmp_brick.v=true
+	tmp_brick.t=t
+	add(bricks,tmp_brick)
 end
 
 function gameover()
@@ -161,7 +153,7 @@ function serveball()
 	sticky_x=flr(pad_w/2)
 	powerup=0
 	powerup_t=0
-	resetpowerups()
+	pups={}
 end
 
 function setangle(ang)
@@ -313,23 +305,21 @@ function draw_game()
 	rectfill(pad_x,pad_y,pad_x+pad_w,pad_y+pad_h,7)
 	
 	--draw bricks
-	for i=1,#brick_x do
-		if brick_v[i] then
-			rectfill(brick_x[i],brick_y[i],brick_x[i]+brick_w,brick_y[i]+brick_h,brick_col[brick_t[i]])
+	for i=1,#bricks do
+		if bricks[i].v then
+			rectfill(bricks[i].x,bricks[i].y,bricks[i].x+brick_w,bricks[i].y+brick_h,brick_col[bricks[i].t])
 		end
 	end
 	
 	--draw powerups
-	for i=1,#pup_x do
-		if pup_v[i] then
-			if pup_t[i]==5 then
+	for pup in all(pups) do
+			if pup.t==5 then
 				palt(0,false)
 				palt(11,true)
 			end
 			
-			spr(pup_t[i],pup_x[i],pup_y[i])
+			spr(pup.t,pup.x,pup.y)
 			palt()
-		end
 	end
 	
 	rectfill(0,0,128,7,0)
@@ -436,20 +426,22 @@ function update_game()
 	pad_x+=pad_dx
 	pad_x=mid(0,pad_x,127-pad_w)
 	
-	--move powerups
-	for i=1,#pup_x do
-		if pup_v[i] then
-			pup_y[i]+=.5
-			--check coll for powerup
-			if pup_y[i]>127 then
-				pup_v[i]=false
-			end
-			if box_box(pup_x[i],pup_y[i],8,6,pad_x,pad_y,pad_w,pad_h) then
-				pup_v[i]=false
-				applypower(pup_t[i])
-				sfx(1)
-			end
+	local del_pups={}
+	for pup in all(pups) do
+		--move powerups
+		pup.y+=.5
+		--check coll for powerup
+		if pup.y>127 then
+			add(del_pups,pup)
+		elseif box_box(pup.x,pup.y,8,6,pad_x,pad_y,pad_w,pad_h) then
+			sfx(1)
+			applypower(pup.t)
+			add(del_pups,pup)
 		end
+	end
+	
+	for del_pup in all(del_pups) do
+		del(pups,del_pup)
 	end
 	
 	if levelfinished() then
@@ -543,15 +535,15 @@ function update_game()
 	end
 	
 	brickhit=false
-	for i=1,#brick_x do
+	for i=1,#bricks do
 		if brickhit then break end
 		
 		-- check if ball hit brick
-		if brick_v[i] and ball_box(nextx,nexty,brick_x[i],brick_y[i],brick_w,brick_h) then
-			if powerup==6 and brick_t[i]=="i"
+		if bricks[i].v and ball_box(nextx,nexty,bricks[i].x,bricks[i].y,brick_w,brick_h) then
+			if powerup==6 and bricks[i].t=="i"
 			or powerup!=6 then
 			-- find out in which direction to deflect
-				if deflx_ball_box(ball_x,ball_y,ball_dx,ball_dy,brick_x[i],brick_y[i],brick_w,brick_h) then
+				if deflx_ball_box(ball_x,ball_y,ball_dx,ball_dy,bricks[i].x,bricks[i].y,brick_w,brick_h) then
 					ball_dx = -ball_dx
 				else
 					ball_dy = -ball_dy
@@ -612,12 +604,12 @@ function applypower(p)
 end
 
 function hitbrick(i,combo)
-	local brick=brick_t[i]
+	local brick=bricks[i].t
 	
 	if brick=="b" then
 		--brick
 		sfx(1+combo_mult)
-		brick_v[i]=false
+		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
 			combo_mult+=1
@@ -630,7 +622,7 @@ function hitbrick(i,combo)
 		--hardened
 		if powerup==6 then
 			sfx(1+combo_mult)
-			brick_v[i]=false
+			bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
 			combo_mult+=1
@@ -638,22 +630,22 @@ function hitbrick(i,combo)
 		end
 		else
 			sfx(8)
-			brick_t[i]="b"
+			bricks[i].t="b"
 		end
 	elseif brick=="p" then
 		--powerup
 		sfx(1+combo_mult)
-		brick_v[i]=false
+		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
 			combo_mult+=1
 			combo_mult=mid(1,combo_mult,6)
 		end
-		spawnpowerup(brick_x[i],brick_y[i])	
+		spawnpowerup(bricks[i].x,bricks[i].y)	
 	elseif brick=="s" then
 		--exploding
 		sfx(1+combo_mult)
-		brick_t[i]="zz"
+		bricks[i].t="zz"
 		if combo then
 			points+=10*combo_mult*points_mult
 			combo_mult+=1
@@ -662,40 +654,41 @@ function hitbrick(i,combo)
 	end
 end
 
-function spawnpowerup(x,y,t)
-	pup_x[#pup_x+1]=x
-	pup_y[#pup_x]=y
-	pup_v[#pup_x]=true
-	pup_t[#pup_x]=flr(rnd(7))+1
+function spawnpowerup(x,y)
+	local tmp_pup={}
+	tmp_pup.x=x
+	tmp_pup.y=y
+	tmp_pup.t=flr(rnd(7))+1
+	add(pups,tmp_pup)
 end
 
 function checkexplosions()
-	for i=1,#brick_x do
-		if brick_t[i]=="zz" then
-			brick_t[i]="z"
+	for i=1,#bricks do
+		if bricks[i].t=="zz" then
+			bricks[i].t="z"
 		end
 	end
 	
-	for i=1,#brick_x do
-		if brick_t[i]=="z" then
+	for i=1,#bricks do
+		if bricks[i].t=="z" then
 			explodebrick(i)
 		end
 	end
 	
-	for i=1,#brick_x do
-		if brick_t[i]=="zz" then
-			brick_t[i]="z"
+	for i=1,#bricks do
+		if bricks[i].t=="zz" then
+			bricks[i].t="z"
 		end
 	end
 end
 
 function explodebrick(i)
-	brick_v[i]=false
+	bricks[i].v=false
 	
-	for j=1,#brick_x do
-		if j!=i and brick_v[j]
-		and abs(brick_x[j]-brick_x[i]) <= brick_w+2
-		and abs(brick_y[j]-brick_y[i]) <= brick_h+2 then
+	for j=1,#bricks do
+		if j!=i and bricks[j].v
+		and abs(bricks[j].x-bricks[i].x) <= brick_w+2
+		and abs(bricks[j].y-bricks[i].y) <= brick_h+2 then
 			hitbrick(j,false)
 		end
 	end
