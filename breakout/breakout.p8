@@ -172,6 +172,35 @@ function newball()
 	return b
 end
 
+function copyball(b)
+	local new={}
+	new.x=b.x
+	new.y=b.y
+	new.dx=b.dx
+	new.dy=b.dy
+	new.ang=b.ang
+	return new
+end
+
+function multiball()
+	local b2=copyball(balls[1])
+	local b3=copyball(balls[1])
+	
+	if balls[1].ang==0 then
+		setangle(b2,1)
+		setangle(b3,2)
+	elseif balls[1].ang==1 then
+		setangle(b2,0)
+		setangle(b3,2)
+	else
+		setangle(b2,0)
+		setangle(b3,1)
+	end
+	
+	add(balls,b2)
+	add(balls,b3)
+end
+
 function setangle(ball,ang)
 	ball.ang=ang
 	if ang==2 then
@@ -589,11 +618,15 @@ function updateball(i)
 	--ball missed paddle
 	if nexty>127 then
 		sfx(0)
-		lives-=1
-		if lives<0 then
-			gameover()
+		if #balls>1 then
+			del(balls,b)
 		else
-			serveball()
+			lives-=1
+			if lives<0 then
+				gameover()
+			else
+				serveball()
+			end
 		end
 	end
 end
@@ -628,6 +661,7 @@ function applypower(p)
 		--multiball
 		powerup=7
 		powerup_t=900
+		multiball()
 	end
 end
 
