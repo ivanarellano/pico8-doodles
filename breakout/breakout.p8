@@ -7,8 +7,8 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	--levels[1]="h9/h9/i3p6"
-	levels[1]="////x4b/s9s"
+	levels[1]="h9/h9/i3p6"
+	--levels[1]="////x4b/s9s"
 	--levels[1]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 end
@@ -142,31 +142,47 @@ function levelover()
 end
 
 function serveball()
-	ball_x=pad_x+flr(pad_w/2)
-	ball_y=pad_y-ball_r
-	ball_dx=1
-	ball_dy=-1
-	ball_ang=1
+	balls={}
+	balls[1]=newball()
+	
+	balls[1].x=pad_x+flr(pad_w/2)
+	balls[1].y=pad_y-ball_r
+	balls[1].dx=1
+	balls[1].dy=-1
+	balls[1].ang=1
+	
 	combo_mult=1
 	points_mult=1
+	
 	sticky=true
 	sticky_x=flr(pad_w/2)
+	
+	pups={}
 	powerup=0
 	powerup_t=0
-	pups={}
 end
 
-function setangle(ang)
-	ball_ang=ang
+function newball()
+	local b={}
+	b.x=0
+	b.y=0
+	b.dx=1
+	b.dy=-1
+	b.ang=1
+	return b
+end
+
+function setangle(ball,ang)
+	ball.ang=ang
 	if ang==2 then
-		ball_dx=0.5*sign(ball_dx)
-		ball_dy=1.3*sign(ball_dy)
+		ball.dx=0.5*sign(ball.dx)
+		ball.dy=1.3*sign(ball.dy)
 	elseif ang==0 then
-		ball_dx=1.3*sign(ball_dx)
-		ball_dy=0.5*sign(ball_dy)
+		ball.dx=1.3*sign(ball.dx)
+		ball.dy=0.5*sign(ball.dy)
 	else
-		ball_dx=sign(ball_dx)
-		ball_dy=sign(ball_dy)
+		ball.dx=sign(ball.dx)
+		ball.dy=sign(ball.dy)
 	end
 end
 
@@ -295,11 +311,14 @@ end
 function draw_game()	
 	cls(1)
 	
-	circfill(ball_x,ball_y,ball_r,10)
-	
+	for bi=#balls,1,-1 do
+		circfill(balls[bi].x,balls[bi].y,ball_r,10)
+	end
+		
 	if sticky then
+		local b=balls[1]
 		--serve preview
-  line(ball_x+ball_dx*4,ball_y+ball_dy*4,ball_x+ball_dx*6,ball_y+ball_dy*6,10)
+  line(b.x+b.dx*4,b.y+b.dy*4,b.x+b.dx*6,b.y+b.dy*6,10)
 	end
 	
 	rectfill(pad_x,pad_y,pad_x+pad_w,pad_y+pad_h,7)
@@ -406,12 +425,12 @@ function update_game()
 	if btn(0) and pad_x>0 then
 		pad_dx = -2.5
 		btn_press = true
-		if sticky then ball_dx=-1 end
+		if sticky then balls[1].dx=-1 end
 	end
 	if btn(1) and pad_x<127-pad_w then 
 		pad_dx = 2.5
 		btn_press = true
-		if sticky then ball_dx=1 end
+		if sticky then balls[1].dx=1 end
 	end
 	
 	if sticky and btnp(5) then
@@ -425,6 +444,11 @@ function update_game()
 	
 	pad_x+=pad_dx
 	pad_x=mid(0,pad_x,127-pad_w)
+	
+	--ball loop
+	for bi=#balls,1,-1 do
+		updateball(bi)
+	end
 	
 	local del_pups={}
 	for pup in all(pups) do
@@ -458,42 +482,46 @@ function update_game()
 	end
 	
 	checkexplosions()
+end
+
+function updateball(i)
+	local b=balls[i]
 	
 	if sticky then
-		ball_x=pad_x+sticky_x
-		ball_y=pad_y-ball_r-1
+		balls[1].x=pad_x+sticky_x
+		balls[1].y=pad_y-ball_r-1
 		return
 	end
 	
 	if powerup==1 then	
 	-- calculate next pos
 	-- before applying to ball
-		nextx = ball_x + (ball_dx/2)
-		nexty = ball_y + (ball_dy/2)
+		nextx = b.x + (b.dx/2)
+		nexty = b.y + (b.dy/2)
 	else
-		nextx = ball_x + ball_dx
-		nexty = ball_y + ball_dy
+		nextx = b.x + b.dx
+		nexty = b.y + b.dy
 	end
 
 	if nextx>124 or nextx<3 then
 		nextx=mid(0,nextx,127) --clamp
-		ball_dx = -ball_dx
+		b.dx = -b.dx
 		sfx(1)
 	end
 	
 	if nexty<10 then
 		nexty=mid(0,nexty,127) --clamp
-		ball_dy = -ball_dy
+		b.dy = -b.dy
 		sfx(1)
 	end
 	
 	-- check if ball hit pad
 	if ball_box(nextx,nexty,pad_x,pad_y,pad_w,pad_h) then
 		-- find out in which direction to deflect
-		if deflx_ball_box(ball_x,ball_y,ball_dx,ball_dy,pad_x,pad_y,pad_w,pad_h) then
+		if deflx_ball_box(b.x,b.y,b.dx,b.dy,pad_x,pad_y,pad_w,pad_h) then
 			--ball hit paddle on the side
-			ball_dx = -ball_dx
-			if ball_x<pad_x+pad_w/2 then
+			b.dx = -b.dx
+			if b.x<pad_x+pad_w/2 then
 				--left
 				nextx=pad_x-ball_r
 			else
@@ -502,23 +530,23 @@ function update_game()
 			end
 		else
 			--ball hit paddle on the top/bottom
-			ball_dy = -ball_dy
-			if ball_y>pad_y then
+			b.dy = -b.dy
+			if b.y>pad_y then
 				--bottom
 				nexty=pad_y+pad_h+ball_r
 			else
 				--top
 				nexty=pad_y-ball_r
 				if abs(pad_dx)>2 then
-					if sign(pad_dx)==sign(ball_dx) then
+					if sign(pad_dx)==sign(b.dx) then
 						--flatten angle
-						setangle(mid(0,ball_ang-1,2))
+						setangle(b,mid(0,b.ang-1,2))
 					else
 						--raise angle
 						if ball_ang==2 then
-							ball_dx=-ball_dx
+							b.dx=-b.dx
 						else
-							setangle(mid(0,ball_ang+1,2))
+							setangle(b,mid(0,b.ang+1,2))
 						end
 					end
 				end
@@ -528,9 +556,9 @@ function update_game()
 		combo_mult=1
 		
 		--catch
-		if powerup==3 and ball_dy<0 then
+		if powerup==3 and b.dy<0 then
 			sticky=true
-			sticky_x=ball_x-pad_x
+			sticky_x=b.x-pad_x
 		end
 	end
 	
@@ -543,10 +571,10 @@ function update_game()
 			if powerup==6 and bricks[i].t=="i"
 			or powerup!=6 then
 			-- find out in which direction to deflect
-				if deflx_ball_box(ball_x,ball_y,ball_dx,ball_dy,bricks[i].x,bricks[i].y,brick_w,brick_h) then
-					ball_dx = -ball_dx
+				if deflx_ball_box(b.x,b.y,b.dx,b.dy,bricks[i].x,bricks[i].y,brick_w,brick_h) then
+					b.dx = -b.dx
 				else
-					ball_dy = -ball_dy
+					b.dy = -b.dy
 				end
 			end
 			
@@ -555,8 +583,8 @@ function update_game()
 		end
 	end
 
-	ball_x = nextx
-	ball_y = nexty
+	b.x = nextx
+	b.y = nexty
 	
 	--ball missed paddle
 	if nexty>127 then
