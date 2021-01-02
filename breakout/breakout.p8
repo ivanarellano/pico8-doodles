@@ -37,7 +37,7 @@ function startgame()
 	lives=3
 	points=0
 	
-	sticky=true
+	sticky=false
 	
 	serveball()
 end
@@ -45,8 +45,9 @@ end
 function nextlevel()
 	mode="game"
 	
+	sticky=false
 	combo_mult=1
-	sticky=true
+
 	pad_x=30
 	pad_y=120
 	pad_dx=0
@@ -150,11 +151,11 @@ function serveball()
 	balls[1].dx=1
 	balls[1].dy=-1
 	balls[1].ang=1
+	balls[1].stuck=true
 	
 	combo_mult=1
 	points_mult=1
 	
-	sticky=true
 	sticky_x=flr(pad_w/2)
 	
 	pups={}
@@ -169,6 +170,7 @@ function newball()
 	b.dx=1
 	b.dy=-1
 	b.ang=1
+	b.stuck=false
 	return b
 end
 
@@ -179,6 +181,7 @@ function copyball(b)
 	new.dx=b.dx
 	new.dy=b.dy
 	new.ang=b.ang
+	new.stuck=b.stuck
 	return new
 end
 
@@ -340,14 +343,14 @@ end
 function draw_game()	
 	cls(1)
 	
-	for bi=#balls,1,-1 do
-		circfill(balls[bi].x,balls[bi].y,ball_r,10)
-	end
+	for i=#balls,1,-1 do
+		local b=balls[i]
+		circfill(b.x,b.y,ball_r,10)
 		
-	if sticky then
-		local b=balls[1]
-		--serve preview
-  line(b.x+b.dx*4,b.y+b.dy*4,b.x+b.dx*6,b.y+b.dy*6,10)
+		if b.stuck then
+			--serve preview
+			line(b.x+b.dx*4,b.y+b.dy*4,b.x+b.dx*6,b.y+b.dy*6,10)
+		end
 	end
 	
 	rectfill(pad_x,pad_y,pad_x+pad_w,pad_y+pad_h,7)
@@ -454,17 +457,16 @@ function update_game()
 	if btn(0) and pad_x>0 then
 		pad_dx = -2.5
 		btn_press = true
-		if sticky then balls[1].dx=-1 end
+		pointstuck(-1)
 	end
 	if btn(1) and pad_x<127-pad_w then 
 		pad_dx = 2.5
 		btn_press = true
-		if sticky then balls[1].dx=1 end
+		pointstuck(1)
 	end
 	
-	if sticky and btnp(5) then
-		sticky=false
-		ball_x=mid(3,ball_x,124)
+	if btnp(5) then
+		releasestuck()
 	end
 	
 	if not btn_press then
@@ -516,9 +518,9 @@ end
 function updateball(i)
 	local b=balls[i]
 	
-	if sticky then
-		balls[1].x=pad_x+sticky_x
-		balls[1].y=pad_y-ball_r-1
+	if b.stuck then
+		b.x=pad_x+sticky_x
+		b.y=pad_y-ball_r-1
 		return
 	end
 	
@@ -585,8 +587,10 @@ function updateball(i)
 		combo_mult=1
 		
 		--catch
-		if powerup==3 and b.dy<0 then
-			sticky=true
+		if sticky and b.dy<0 then
+			releasestuck()
+			sticky=false
+			b.stuck=true
 			sticky_x=b.x-pad_x
 		end
 	end
@@ -631,6 +635,25 @@ function updateball(i)
 	end
 end
 
+function releasestuck()
+	for i=1,#balls do
+		if balls[i].stuck then
+			balls[i].stuck=false
+			balls[i].x=mid(3,balls[i].x,124)
+		end
+	end
+end
+
+function pointstuck(sign)
+	for i=1,#balls do
+		--ball stuck to pad
+		--can be targeted
+		if balls[i].stuck then
+			balls[i].dx=abs(balls[i].dx)*sign
+		end
+	end
+end
+
 function applypower(p)
 	if p==1 then
 		--slowdown
@@ -643,8 +666,16 @@ function applypower(p)
 		lives+=1
 	elseif p==3 then
 		--catch
-		powerup=3
-		powerup_t=900 --60fps*10sec
+		--check for stuck balls
+		hasstuck=false
+		for i=1,#balls do
+			if balls[i].stuck then
+				hasstuck=true
+			end
+		end
+		if hasstuck==false then
+			sticky=true
+		end
 	elseif p==4 then
 		--expand
 		powerup=4
@@ -659,8 +690,7 @@ function applypower(p)
 		powerup_t=900
 	elseif p==7 then
 		--multiball
-		powerup=7
-		powerup_t=900
+		releasestuck()
 		multiball()
 	end
 end
