@@ -7,7 +7,7 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	levels[1]="h9/h9/i3p6"
+	levels[1]="b9/b3x3p3/i3p6"
 	--levels[1]="////x4b/s9s"
 	--levels[1]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
@@ -38,6 +38,11 @@ function startgame()
 	points=0
 	
 	sticky=false
+	
+	timer_mega=0
+	timer_slow=0
+	timer_expand=0
+	timer_reduce=0
 	
 	serveball()
 end
@@ -159,8 +164,11 @@ function serveball()
 	sticky_x=flr(pad_w/2)
 	
 	pups={}
-	powerup=0
-	powerup_t=0
+	
+	timer_mega=0
+	timer_slow=0
+	timer_expand=0
+	timer_reduce=0
 end
 
 function newball()
@@ -186,22 +194,20 @@ function copyball(b)
 end
 
 function multiball()
-	local b2=copyball(balls[1])
-	local b3=copyball(balls[1])
+	local rnd_ball=balls[flr(rnd(#balls)+1)]
+	local b2=copyball(rnd_ball)
 	
-	if balls[1].ang==0 then
-		setangle(b2,1)
-		setangle(b3,2)
+	if rnd_ball.ang==0 then
+		setangle(b2,2)
 	elseif balls[1].ang==1 then
-		setangle(b2,0)
-		setangle(b3,2)
+		setangle(b2,2)
+		setangle(rnd_ball,0)
 	else
 		setangle(b2,0)
-		setangle(b3,1)
 	end
 	
-	add(balls,b2)
-	add(balls,b3)
+	b2.stuck=false
+	balls[#balls+1]=b2
 end
 
 function setangle(ball,ang)
@@ -442,10 +448,10 @@ function update_game()
 	local nextx,nexty
 	local brickhit
 	
-	if powerup==4 then
+	if timer_expand>0 then
 		--pad expand
 		pad_w=flr(pad_wo*1.5)
-	elseif powerup==5 then
+	elseif timer_reduce>0 then
 		--pad reduce
 		pad_w=flr(pad_wo/2)
 		points_mult=2
@@ -504,12 +510,18 @@ function update_game()
 		levelover()
 	end
 	
-	--powerup timer
-	if powerup!=0 then
-		powerup_t-=1
-		if powerup_t<=0 then
-			powerup=0
-		end
+	--powerup timers
+	if timer_mega>0 then
+		timer_mega-=1
+	end
+	if timer_slow>0 then
+		timer_slow-=1
+	end
+	if timer_expand>0 then
+		timer_expand-=1
+	end
+	if timer_reduce>0 then
+		timer_reduce-=1
 	end
 	
 	checkexplosions()
@@ -524,7 +536,7 @@ function updateball(i)
 		return
 	end
 	
-	if powerup==1 then	
+	if timer_slow>0 then	
 	-- calculate next pos
 	-- before applying to ball
 		nextx = b.x + (b.dx/2)
@@ -601,8 +613,8 @@ function updateball(i)
 		
 		-- check if ball hit brick
 		if bricks[i].v and ball_box(nextx,nexty,bricks[i].x,bricks[i].y,brick_w,brick_h) then
-			if powerup==6 and bricks[i].t=="i"
-			or powerup!=6 then
+			if timer_mega>0 and bricks[i].t=="i"
+			or timer_mega<=0 then
 			-- find out in which direction to deflect
 				if deflx_ball_box(b.x,b.y,b.dx,b.dy,bricks[i].x,bricks[i].y,brick_w,brick_h) then
 					b.dx = -b.dx
@@ -657,12 +669,9 @@ end
 function applypower(p)
 	if p==1 then
 		--slowdown
-		powerup=1
-		powerup_t=900
+		timer_slow=900
 	elseif p==2 then
 		--life
-		powerup=2
-		powerup_t=900
 		lives+=1
 	elseif p==3 then
 		--catch
@@ -678,19 +687,17 @@ function applypower(p)
 		end
 	elseif p==4 then
 		--expand
-		powerup=4
-		powerup_t=900
+		timer_expand=900
+		timer_reduce=0
 	elseif p==5 then
 		--reduce
-		powerup=5
-		powerup_t=900
+		timer_reduce=900
+		timer_expand=0
 	elseif p==6 then
 		--megaball
-		powerup=6
-		powerup_t=900
+		timer_mega=900
 	elseif p==7 then
 		--multiball
-		releasestuck()
 		multiball()
 	end
 end
@@ -712,7 +719,7 @@ function hitbrick(i,combo)
 		sfx(8)
 	elseif brick=="h" then
 		--hardened
-		if powerup==6 then
+		if timer_mega>0 then
 			sfx(1+combo_mult)
 			bricks[i].v=false
 		if combo then
