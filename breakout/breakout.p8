@@ -4,11 +4,12 @@ __lua__
 function _init()
 	cls()
 	mode="start"
+	shake=0
 	level=""
 	levelnum=1
 	levels={}
-	levels[1]="b9/b3x3p3/i3p6"
-	--levels[1]="////x4b/s9s"
+	--levels[1]="b9/b3x3p3/i3p6"
+	levels[1]="/x4b/s3b3s3/b9"
 	--levels[1]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 end
@@ -335,6 +336,8 @@ function deflx_ball_box(bx,by,bdx,bdy,tx,ty,tw,th)
 end
 -->8
 function _draw()
+	doshake()
+	
 	if mode=="game" then
 		draw_game()
 	elseif mode=="start" then
@@ -347,7 +350,8 @@ function _draw()
 end
 
 function draw_game()	
-	cls(1)
+	cls()
+	rectfill(0,0,127,127,1)
 	
 	for i=#balls,1,-1 do
 		local b=balls[i]
@@ -635,8 +639,10 @@ function updateball(i)
 	if nexty>127 then
 		sfx(0)
 		if #balls>1 then
+			shake+=0.1
 			del(balls,b)
 		else
+			shake+=0.4
 			lives-=1
 			if lives<0 then
 				gameover()
@@ -745,6 +751,7 @@ function hitbrick(i,combo)
 		--exploding
 		sfx(1+combo_mult)
 		bricks[i].t="zz"
+		shake+=0.1
 		if combo then
 			points+=10*combo_mult*points_mult
 			combo_mult+=1
@@ -770,6 +777,7 @@ function checkexplosions()
 	
 	for i=1,#bricks do
 		if bricks[i].t=="z" then
+	
 			explodebrick(i)
 		end
 	end
@@ -790,6 +798,22 @@ function explodebrick(i)
 		and abs(bricks[j].y-bricks[i].y) <= brick_h+2 then
 			hitbrick(j,false)
 		end
+	end
+end
+-->8
+function doshake()
+	-- -16 +16
+	local shakex=16-flr(rnd(32))
+	local shakey=16-flr(rnd(32))
+	
+	shakex*=shake
+	shakey*=shake
+	
+	camera(shakex,shakey)
+	
+	shake*=.95
+	if shake<.05 then
+		shake=0
 	end
 end
 __gfx__
