@@ -12,6 +12,13 @@ function _init()
 	levels[1]="/x4b/s3b3s3/b9"
 	--levels[1]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
+	
+	blink_col=7
+	blink_col_i=1
+	blinkframe=0
+	blinkspeed=10
+	
+	start_count=-1
 end
 
 function startgame()
@@ -349,6 +356,20 @@ function _draw()
 	end
 end
 
+function doblink()
+	local col={3,11,10,7}
+	
+	blinkframe+=1
+	if blinkframe>blinkspeed then
+		blinkframe=0
+		blink_col_i+=1
+		if blink_col_i>#col then
+			blink_col_i=1
+		end
+		blink_col=col[blink_col_i]
+	end
+end
+
 function draw_game()	
 	cls()
 	rectfill(0,0,127,127,1)
@@ -402,7 +423,7 @@ end
 function draw_start()
 	cls()
 	print("pico hero breakout",30,40,7)
-	print("press ❎ to start",30,70,11)
+	print("press ❎ to start",30,70,blink_col)
 end
 
 function draw_gameover()
@@ -418,6 +439,8 @@ function draw_levelover()
 end
 -->8
 function _update60()
+	doblink()
+	
 	if mode=="game" then
 		update_game()
 	elseif mode=="start" then
@@ -430,8 +453,22 @@ function _update60()
 end
 
 function update_start()
-	if btn(5) then
-		startgame()
+	if start_count<0 then
+		if btn(5) then
+			sfx(9)
+			start_count=60
+		end
+	else
+		start_count-=1
+		doblink()
+		doblink()
+		doblink()
+		doblink()
+		doblink()
+		if start_count<=0 then
+			start_count=-1
+			startgame()
+		end
 	end
 end
 
@@ -835,3 +872,4 @@ __sfx__
 000100002c1502c15030150311503415033150391503d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000100002b4502b4502f4502f4503645036450383003d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000600000e1501b1501a7000050000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000300001875018750287502875018750187502875028750197501975000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
