@@ -18,7 +18,13 @@ function _init()
 	blinkframe=0
 	blinkspeed=10
 	
+	blink_grey=7
+	blink_grey_i=1
+	
 	start_count=-1
+	gover_count=-1
+	
+	fadeperc=0
 end
 
 function startgame()
@@ -148,7 +154,9 @@ function addbrick(i,t)
 end
 
 function gameover()
-	mode="gameover"
+	mode="gameoverwait"
+	gover_count=60
+	blinkspeed=16
 end
 
 function levelover()
@@ -343,30 +351,21 @@ function deflx_ball_box(bx,by,bdx,bdy,tx,ty,tw,th)
 end
 -->8
 function _draw()
-	doshake()
-	
 	if mode=="game" then
 		draw_game()
 	elseif mode=="start" then
 		draw_start()
 	elseif mode=="gameover" then
 		draw_gameover()
+	elseif mode=="gameoverwait" then
+		--draw_game()
 	elseif mode=="levelover" then
 		draw_levelover()
 	end
-end
-
-function doblink()
-	local col={3,11,10,7}
 	
-	blinkframe+=1
-	if blinkframe>blinkspeed then
-		blinkframe=0
-		blink_col_i+=1
-		if blink_col_i>#col then
-			blink_col_i=1
-		end
-		blink_col=col[blink_col_i]
+	pal()
+	if fadeperc!=0 then
+		fadepal(fadeperc)
 	end
 end
 
@@ -429,7 +428,7 @@ end
 function draw_gameover()
 	rectfill(0,60,128,76,0)
 	print("game over",46,62,7)
-	print("press ❎ to restart",27,70,7)
+	print("press ❎ to restart",27,70,blink_grey)
 end
 
 function draw_levelover()
@@ -440,7 +439,7 @@ end
 -->8
 function _update60()
 	doblink()
-	
+	doshake()
 	if mode=="game" then
 		update_game()
 	elseif mode=="start" then
@@ -449,6 +448,8 @@ function _update60()
 		update_gameover()
 	elseif mode=="levelover" then
 		update_levelover()
+	elseif mode=="gameoverwait" then
+		update_gameoverwait()
 	end
 end
 
@@ -456,25 +457,44 @@ function update_start()
 	if start_count<0 then
 		if btn(5) then
 			sfx(9)
-			start_count=60
+			start_count=80
+			blinkspeed=1
 		end
 	else
 		start_count-=1
-		doblink()
-		doblink()
-		doblink()
-		doblink()
-		doblink()
+		fadeperc=(80-start_count)/80
 		if start_count<=0 then
 			start_count=-1
+			blinkspeed=10
 			startgame()
 		end
 	end
 end
 
 function update_gameover()
-	if btnp(5) then
-		startgame()
+ if gover_count<0 then
+  if btnp(5) then
+   gover_count=80
+   blinkspeed=1
+   sfx(9)
+  end
+ else
+  gover_count-=1
+  fadeperc=(80-gover_count)/80
+  if gover_count<=0 then
+   gover_count= -1
+   blinkspeed=8
+   fadeperc=0
+   startgame()
+  end 
+ end
+end
+
+function update_gameoverwait()
+	gover_count-=1
+	if gover_count<=0 then
+		gover_count=-1
+		mode="gameover"
 	end
 end
 
@@ -488,6 +508,14 @@ function update_game()
 	local btn_press = false
 	local nextx,nexty
 	local brickhit
+	
+	--fade in game
+	if fadeperc!=0 then
+		fadeperc-=.05
+		if fadeperc<0 then
+			fadeperc=0
+		end
+	end
 	
 	if timer_expand>0 then
 		--pad expand
@@ -853,6 +881,57 @@ function doshake()
 		shake=0
 	end
 end
+
+function doblink()
+	local col={3,11,10,7}
+	local grey_col={5,6,7,6}
+	
+	blinkframe+=1
+	if blinkframe>blinkspeed then
+		blinkframe=0
+		blink_col_i+=1
+		if blink_col_i>#col then
+			blink_col_i=1
+		end
+		blink_col=col[blink_col_i]
+		
+		blink_grey_i+=1
+		if blink_grey_i>#grey_col then
+			blink_grey_i=1
+		end
+		blink_grey=grey_col[blink_col_i]
+	end
+end
+
+function fadepal(_perc)
+ -- 0 means normal
+ -- 1 is completely black
+ 
+ local p=flr(mid(0,_perc,1)*100)
+ 
+ -- these are helper variables
+ local kmax,col,dpal,j,k
+ dpal={0,1,1, 2,1,13,6,
+          4,4,9,3, 13,1,13,14}
+ 
+ -- now we go trough all colors
+ for j=1,15 do
+  --grab the current color
+  col = j
+  
+  --now calculate how many
+  --times we want to fade the
+  --color.
+  kmax=(p+(j*1.46))/22  
+  for k=1,kmax do
+   col=dpal[col]
+  end
+  
+  --finally, we change the
+  --palette
+  pal(j,col,1)
+ end
+end
 __gfx__
 0000000006777760067777600677776006777760b677776b06777760067777600000000000000000000000000000000000000000000000000000000000000000
 00000000659449556582885565bbbb5565cccc556500005565eeee5565aaaa550000000000000000000000000000000000000000000000000000000000000000
@@ -872,4 +951,4 @@ __sfx__
 000100002c1502c15030150311503415033150391503d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000100002b4502b4502f4502f4503645036450383003d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000600000e1501b1501a7000050000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000300001875018750287502875018750187502875028750197501975000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000300001875018750287502875018750187502875028750197501975028750287500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
