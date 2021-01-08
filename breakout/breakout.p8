@@ -25,6 +25,10 @@ function _init()
 	gover_count=-1
 	
 	fadeperc=0
+	
+	arrowmult=1
+	arrowmult_2=1
+	arrow_count=0
 end
 
 function startgame()
@@ -379,7 +383,12 @@ function draw_game()
 		
 		if b.stuck then
 			--serve preview
-			line(b.x+b.dx*4,b.y+b.dy*4,b.x+b.dx*6,b.y+b.dy*6,10)
+			pset(
+				b.x+b.dx*4*arrowmult,
+				b.y+b.dy*4*arrowmult,10)
+			pset(
+				b.x+b.dx*4*arrowmult_2,
+				b.y+b.dy*4*arrowmult_2,10)
 		end
 	end
 	
@@ -484,7 +493,6 @@ function update_gameover()
   if gover_count<=0 then
    gover_count= -1
    blinkspeed=8
-   fadeperc=0
    startgame()
   end 
  end
@@ -886,6 +894,7 @@ function doblink()
 	local col={3,11,10,7}
 	local grey_col={5,6,7,6}
 	
+	--text blink
 	blinkframe+=1
 	if blinkframe>blinkspeed then
 		blinkframe=0
@@ -901,6 +910,20 @@ function doblink()
 		end
 		blink_grey=grey_col[blink_col_i]
 	end
+	
+	--arrow anim
+	arrow_count+=1
+	if arrow_count>30 then
+		arrow_count=0
+	end
+	
+	local af2=arrow_count+15
+	if af2>30 then
+		af2=af2-30
+	end
+	
+	arrowmult=1+(2*(arrow_count/30))
+	arrowmult_2=1+(2*(af2/30))
 end
 
 function fadepal(_perc)
