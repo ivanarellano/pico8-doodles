@@ -387,6 +387,8 @@ function draw_game()
 		end
 	end
 	
+	drawparts()
+	
 	--draw powerups
 	for pup in all(pups) do
 			if pup.t==5 then
@@ -397,8 +399,6 @@ function draw_game()
 			spr(pup.t,pup.x,pup.y)
 			palt()
 	end
-	
-	drawparts()
 	
 	for i=#balls,1,-1 do
 		local b=balls[i]
@@ -795,8 +795,10 @@ function hitbrick(i,combo)
 	local brick=bricks[i].t
 	
 	if brick=="b" then
-		--brick
+		--regular brick
 		sfx(1+combo_mult)
+		--spawn particles
+		shatterbrick(bricks[i])
 		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
@@ -823,6 +825,8 @@ function hitbrick(i,combo)
 	elseif brick=="p" then
 		--powerup
 		sfx(1+combo_mult)
+		--spawn particles
+		shatterbrick(bricks[i])
 		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
@@ -967,24 +971,38 @@ function fadepal(_perc)
 end
 
 --particles
-function addpart(x,y,typ,maxage,col,oldcol)
+function addpart(x,y,dx,dy,typ,maxage,col)
 	local p = {}
 	p.x=x
 	p.y=y
+	p.dx=dx
+	p.dy=dy
 	p.typ=typ
 	p.maxage=maxage
 	p.age=0
-	p.col=col
-	p.oldcol=oldcol
+	p.col=0
+	p.colarr=col
 	add(prt,p)
 end
 
+function shatterbrick(b)
+	for i=1,10 do
+		local ang=rnd()
+		local dx=cos(ang)*.8
+		local dy=sin(ang)*.8
+		addpart(b.x,b.y,dx,dy,1,60,{7})
+	end
+end
+
 function spawntrail(x,y)
-	local ang=rnd()
-	local ox=cos(ang)*ball_r*.5
-	local oy=sin(ang)*ball_r*.5
+	--reduces amt of parts
+	if rnd()<.5 then
+		local ang=rnd()
+		local ox=cos(ang)*ball_r*.4
+		local oy=sin(ang)*ball_r*.4
 	
-	addpart(x+ox,y+oy,0,15+rnd(15),10,9)
+		addpart(x+ox,y+oy,0,0,0,15+rnd(15),{10,9})
+	end
 end
 
 function updateparts()
@@ -995,9 +1013,24 @@ function updateparts()
 		if p.age>p.maxage then
 			del(prt,p)
 		else
-			if (p.age/p.maxage)>.5 then
-				p.col=p.oldcol
+			--change colors
+			if #p.colarr==1 then
+				p.col=p.colarr[1]
+			else
+				--0-1,mult by color len,flr
+				--set is ints: [0-arrlen]
+				local ci=1+flr((p.age/p.maxage)*#p.colarr)
+				p.col=p.colarr[ci]
 			end
+			
+			if p.typ==1 then
+				--gravity
+				p.dy+=.1
+			end
+			
+			--move particle
+			p.x+=p.dx
+			p.y+=p.dy
 		end
 	end
 end
@@ -1007,7 +1040,7 @@ function drawparts()
 		local p=prt[i]
 		
 		--pixel particle
-		if p.typ==0 then
+		if p.typ==0 or p.typ==1 then
 			pset(p.x,p.y,p.col)
 		end
 	end
