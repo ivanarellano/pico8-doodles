@@ -29,6 +29,9 @@ function _init()
 	arrowmult=1
 	arrowmult_2=1
 	arrow_count=0
+	
+	--particles
+	prt={}
 end
 
 function startgame()
@@ -377,23 +380,6 @@ function draw_game()
 	cls()
 	rectfill(0,0,127,127,1)
 	
-	for i=#balls,1,-1 do
-		local b=balls[i]
-		circfill(b.x,b.y,ball_r,10)
-		
-		if b.stuck then
-			--serve preview
-			pset(
-				b.x+b.dx*4*arrowmult,
-				b.y+b.dy*4*arrowmult,10)
-			pset(
-				b.x+b.dx*4*arrowmult_2,
-				b.y+b.dy*4*arrowmult_2,10)
-		end
-	end
-	
-	rectfill(pad_x,pad_y,pad_x+pad_w,pad_y+pad_h,7)
-	
 	--draw bricks
 	for i=1,#bricks do
 		if bricks[i].v then
@@ -411,6 +397,25 @@ function draw_game()
 			spr(pup.t,pup.x,pup.y)
 			palt()
 	end
+	
+	drawparts()
+	
+	for i=#balls,1,-1 do
+		local b=balls[i]
+		circfill(b.x,b.y,ball_r,10)
+		
+		if b.stuck then
+			--serve preview
+			pset(
+				b.x+b.dx*4*arrowmult,
+				b.y+b.dy*4*arrowmult,10)
+			pset(
+				b.x+b.dx*4*arrowmult_2,
+				b.y+b.dy*4*arrowmult_2,10)
+		end
+	end
+	
+	rectfill(pad_x,pad_y,pad_x+pad_w,pad_y+pad_h,7)
 	
 	rectfill(0,0,128,7,0)
 	if debug!="" then
@@ -449,6 +454,8 @@ end
 function _update60()
 	doblink()
 	doshake()
+	updateparts()
+	
 	if mode=="game" then
 		update_game()
 	elseif mode=="start" then
@@ -708,6 +715,9 @@ function updateball(i)
 	b.x = nextx
 	b.y = nexty
 	
+	--trail particles
+	spawntrail(nextx,nexty)
+	
 	--ball missed paddle
 	if nexty>127 then
 		sfx(0)
@@ -954,6 +964,53 @@ function fadepal(_perc)
   --palette
   pal(j,col,1)
  end
+end
+
+--particles
+function addpart(x,y,typ,maxage,col,oldcol)
+	local p = {}
+	p.x=x
+	p.y=y
+	p.typ=typ
+	p.maxage=maxage
+	p.age=0
+	p.col=col
+	p.oldcol=oldcol
+	add(prt,p)
+end
+
+function spawntrail(x,y)
+	local ang=rnd()
+	local ox=cos(ang)*ball_r*.5
+	local oy=sin(ang)*ball_r*.5
+	
+	addpart(x+ox,y+oy,0,15+rnd(15),10,9)
+end
+
+function updateparts()
+	for i=#prt,1,-1 do
+		local p=prt[i]
+		
+		p.age+=1
+		if p.age>p.maxage then
+			del(prt,p)
+		else
+			if (p.age/p.maxage)>.5 then
+				p.col=p.oldcol
+			end
+		end
+	end
+end
+
+function drawparts()
+	for i=1,#prt do
+		local p=prt[i]
+		
+		--pixel particle
+		if p.typ==0 then
+			pset(p.x,p.y,p.col)
+		end
+	end
 end
 __gfx__
 0000000006777760067777600677776006777760b677776b06777760067777600000000000000000000000000000000000000000000000000000000000000000
