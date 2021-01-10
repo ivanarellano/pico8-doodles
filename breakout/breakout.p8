@@ -652,16 +652,18 @@ function updateball(i)
 		nexty = b.y + b.dy
 	end
 
+	--check if ball hit wall
 	if nextx>124 or nextx<3 then
 		nextx=mid(0,nextx,127) --clamp
 		b.dx = -b.dx
 		sfx(1)
+		spawnpuff(nextx,nexty)
 	end
-	
 	if nexty<10 then
 		nexty=mid(0,nexty,127) --clamp
 		b.dy = -b.dy
 		sfx(1)
+		spawnpuff(nextx,nexty)
 	end
 	
 	-- check if ball hit pad
@@ -701,6 +703,7 @@ function updateball(i)
 				end
 			end
 		end
+		spawnpuff(nextx,nexty)
 		sfx(1)
 		combo_mult=1
 		
@@ -1000,7 +1003,7 @@ function fadepal(_perc)
 end
 
 --particles
-function addpart(x,y,dx,dy,typ,maxage,col)
+function addpart(x,y,dx,dy,typ,maxage,col,s)
 	local p = {}
 	p.x=x
 	p.y=y
@@ -1013,10 +1016,13 @@ function addpart(x,y,dx,dy,typ,maxage,col)
 	p.colarr=col
 	p.rot=0
 	p.rottimer=0
+	p.size=s
+	p.os=s
 	add(prt,p)
 end
 
 function shatterbrick(b,vx,vy)
+	sfx(10)
 	shake+=.07
 	
 	--bump the brick
@@ -1091,6 +1097,16 @@ function animatebricks()
 	end
 end
 
+function spawnpuff(x,y)
+	for i=1,5 do
+		local ang=rnd()
+		local dx=cos(ang)*1.3
+		local dy=sin(ang)*1.3
+	
+		addpart(x,y,dx,dy,2,15+rnd(15),{12},1+rnd(2))
+	end	
+end
+
 function spawntrail(x,y)
 	--reduces amt of parts
 	if rnd()<.5 then
@@ -1102,6 +1118,10 @@ function spawntrail(x,y)
 	end
 end
 
+--type 0: pixel prt
+--type 1: gravity prt
+--type 2: ball of smoke
+--type 3: rotating spr
 function updateparts()
 	for i=#prt,1,-1 do
 		local p=prt[i]
@@ -1140,6 +1160,19 @@ function updateparts()
 				end
 			end
 			
+			--shrink
+			if p.typ==2 then
+				--start at 100
+				local per=1-(p.age/p.maxage)
+				p.size=per*p.os
+			end
+			
+			--friction/drag
+			if p.typ==2 then
+				p.dx/=1.1
+				p.dy/=1.1
+			end
+			
 			--move particle
 			p.x+=p.dx
 			p.y+=p.dy
@@ -1154,6 +1187,8 @@ function drawparts()
 		--pixel particle
 		if p.typ==0 or p.typ==1 then
 			pset(p.x,p.y,p.col)
+		elseif p.typ==2 then
+			circfill(p.x,p.y,p.size,p.col)
 		elseif p.typ==3 then
 			local fx,fy
 			
@@ -1201,3 +1236,4 @@ __sfx__
 000100002b4502b4502f4502f4503645036450383003d00028000220001300009000010001e0002c0003300036000350002600023000200001b00016000100000c0003e0003a000010000b000000000000000000
 000600000e1501b1501a7000050000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000300001875018750287502875018750187502875028750197501975028750287500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000400002c6301f6201a620156200f6100b6100461002610000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
