@@ -162,7 +162,9 @@ function addbrick(i,t)
 	b.t=t
 	b.flash=0
 	b.ox=0
-	b.oy=0
+	b.oy=-(128+rnd(128))
+	b.dx=0
+	b.dy=rnd(64)
 	
 	add(bricks,b)
 end
@@ -628,7 +630,7 @@ function update_game()
 	
 	checkexplosions()
 	
-	reboundbricks()
+	animatebricks()
 end
 
 function updateball(i)
@@ -1014,8 +1016,8 @@ end
 
 function shatterbrick(b,vx,vy)
 	--bump the brick
-	b.ox=vx*4
-	b.oy=vy*4
+	b.dx=vx*.7
+	b.dy=vy*.7
 	
 	for x=0,brick_w do
 		for z=0,brick_h do
@@ -1032,13 +1034,41 @@ function shatterbrick(b,vx,vy)
 	end
 end
 
-function reboundbricks()
+function animatebricks()
 	for i=1,#bricks do
 		local b=bricks[i]
 		if b.v or b.flash>0 then
-			if b.ox!=0 or b.oy!=0 then
-				b.ox/=5
-				b.oy/=5
+			--see if bricks are moving
+			if b.dx!=0 or b.dy!=0 or b.oy!=0 or b.ox!=0 then
+				--apply speed to brick
+				b.ox+=b.dx
+				b.oy+=b.dy
+				
+				--adjust speed towards 0
+				b.dx-=b.ox/10
+				b.dy-=b.oy/10
+				
+				--speed will overshoot 0
+				--bring back to a min
+				--with dampening
+				if abs(b.dx)>(b.ox) then
+					b.dx=b.dx/1.3
+				end	
+				if abs(b.dy)>(b.oy) then
+					b.dy=b.dy/1.3
+				end
+				
+				--snap to 0 (rest position)
+				--when offset+speed are
+				--close to resting
+				if abs(b.oy)<.2 and abs(b.dy)<.25 then
+					b.oy=0
+					b.dy=0
+				end
+				if abs(b.ox)<.2 and abs(b.dx)<.25 then
+					b.ox=0
+					b.dx=0
+				end
 			end
 		end
 	end
