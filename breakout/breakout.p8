@@ -32,6 +32,9 @@ function _init()
 	
 	--particles
 	prt={}
+	
+	lasthitx=0
+	lasthity=0
 end
 
 function startgame()
@@ -152,12 +155,16 @@ function makebricks(lvl)
 end
 
 function addbrick(i,t)
-	local tmp_brick={}
-	tmp_brick.x=4+((i-1)%11)*(brick_w+2)
-	tmp_brick.y=20+flr((i-1)/11)*(brick_h+2)
-	tmp_brick.v=true
-	tmp_brick.t=t
-	add(bricks,tmp_brick)
+	local b={}
+	b.x=4+((i-1)%11)*(brick_w+2)
+	b.y=20+flr((i-1)/11)*(brick_h+2)
+	b.v=true
+	b.t=t
+	b.flash=0
+	b.ox=0
+	b.oy=0
+	
+	add(bricks,b)
 end
 
 function gameover()
@@ -382,8 +389,19 @@ function draw_game()
 	
 	--draw bricks
 	for i=1,#bricks do
-		if bricks[i].v then
-			rectfill(bricks[i].x,bricks[i].y,bricks[i].x+brick_w,bricks[i].y+brick_h,brick_col[bricks[i].t])
+		local b=bricks[i]
+		
+		if b.v or b.flash>0 then
+			local col=brick_col[b.t]
+			if b.flash>0 then
+				col=7
+				b.flash-=1
+			end
+			
+			local bx=b.x+b.ox
+			local by=b.y+b.oy
+			
+			rectfill(bx,by,bx+brick_w,by+brick_h,col)
 		end
 	end
 	
@@ -609,6 +627,8 @@ function update_game()
 	end
 	
 	checkexplosions()
+	
+	reboundbricks()
 end
 
 function updateball(i)
@@ -699,7 +719,9 @@ function updateball(i)
 		if bricks[i].v and ball_box(nextx,nexty,bricks[i].x,bricks[i].y,brick_w,brick_h) then
 			if timer_mega>0 and bricks[i].t=="i"
 			or timer_mega<=0 then
-			-- find out in which direction to deflect
+				lasthitx=b.dx
+				lasthity=b.dy
+				-- find out in which direction to deflect
 				if deflx_ball_box(b.x,b.y,b.dx,b.dy,bricks[i].x,bricks[i].y,brick_w,brick_h) then
 					b.dx = -b.dx
 				else
@@ -793,12 +815,14 @@ end
 
 function hitbrick(i,combo)
 	local brick=bricks[i].t
+	local flashtime=8
 	
 	if brick=="b" then
 		--regular brick
 		sfx(1+combo_mult)
 		--spawn particles
-		shatterbrick(bricks[i])
+		shatterbrick(bricks[i],lasthitx,lasthity)
+		bricks[i].flash=flashtime
 		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
@@ -812,6 +836,7 @@ function hitbrick(i,combo)
 		--hardened
 		if timer_mega>0 then
 			sfx(1+combo_mult)
+			bricks[i].flash=flashtime
 			bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
@@ -825,8 +850,10 @@ function hitbrick(i,combo)
 	elseif brick=="p" then
 		--powerup
 		sfx(1+combo_mult)
+		bricks[i].flash=flashtime
+		
 		--spawn particles
-		shatterbrick(bricks[i])
+		shatterbrick(bricks[i],lasthitx,lasthity)
 		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
@@ -985,12 +1012,35 @@ function addpart(x,y,dx,dy,typ,maxage,col)
 	add(prt,p)
 end
 
-function shatterbrick(b)
-	for i=1,10 do
-		local ang=rnd()
-		local dx=cos(ang)*.8
-		local dy=sin(ang)*.8
-		addpart(b.x,b.y,dx,dy,1,60,{7})
+function shatterbrick(b,vx,vy)
+	--bump the brick
+	b.ox=vx*4
+	b.oy=vy*4
+	
+	for x=0,brick_w do
+		for z=0,brick_h do
+			if rnd()<.5 then
+				local ang=rnd()
+				local dx=cos(ang)*rnd(2)+vx
+				local dy=sin(ang)*rnd(2)+vy
+				
+				addpart(
+					b.x+x,b.y+z,
+					dx,dy,1,100,{7,6,5})
+			end
+		end
+	end
+end
+
+function reboundbricks()
+	for i=1,#bricks do
+		local b=bricks[i]
+		if b.v or b.flash>0 then
+			if b.ox!=0 or b.oy!=0 then
+				b.ox/=5
+				b.oy/=5
+			end
+		end
 	end
 end
 
@@ -1012,6 +1062,10 @@ function updateparts()
 		p.age+=1
 		if p.age>p.maxage then
 			del(prt,p)
+		elseif p.x<-20 or p.x>148 then
+			del(prt,p)
+		elseif p.y<-20 or p.y>148 then
+			del(prt,p)
 		else
 			--change colors
 			if #p.colarr==1 then
@@ -1025,7 +1079,7 @@ function updateparts()
 			
 			if p.typ==1 then
 				--gravity
-				p.dy+=.1
+				p.dy+=.08
 			end
 			
 			--move particle
