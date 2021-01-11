@@ -8,8 +8,8 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	--levels[1]="b9/b3x3p3/i3p6"
-	levels[1]="/x4b/s3b3s3/b9"
+	levels[1]="b9bb9bb9bb9bb9bp9p"
+	--levels[1]="/x4b/s3b3s3/b9"
 	--levels[1]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 	
@@ -420,9 +420,16 @@ function draw_game()
 			palt()
 	end
 	
+	--balls
 	for i=#balls,1,-1 do
 		local b=balls[i]
-		circfill(b.x,b.y,ball_r,10)
+		local ballc=10
+		
+		if timer_mega>0 then
+			ballc=14
+		end
+		
+		circfill(b.x,b.y,ball_r,ballc)
 		
 		if b.stuck then
 			--serve preview
@@ -601,6 +608,7 @@ function update_game()
 		elseif box_box(pup.x,pup.y,8,6,pad_x,pad_y,pad_w,pad_h) then
 			sfx(1)
 			applypower(pup.t)
+			spawnpowpuff(pup.x,pup.y,pup.t)
 			add(del_pups,pup)
 		end
 	end
@@ -743,7 +751,11 @@ function updateball(i)
 	b.y = nexty
 	
 	--trail particles
-	spawntrail(nextx,nexty)
+	if timer_mega>0 then
+		spawnmegatrail(nextx,nexty)
+	else
+		spawntrail(nextx,nexty)
+	end
 	
 	--ball missed paddle
 	if nexty>127 then
@@ -811,7 +823,7 @@ function applypower(p)
 		timer_expand=0
 	elseif p==6 then
 		--megaball
-		timer_mega=900
+		timer_mega=300
 	elseif p==7 then
 		--multiball
 		multiball()
@@ -880,11 +892,11 @@ function hitbrick(i,combo)
 end
 
 function spawnpowerup(x,y)
-	local tmp_pup={}
-	tmp_pup.x=x
-	tmp_pup.y=y
-	tmp_pup.t=flr(rnd(7))+1
-	add(pups,tmp_pup)
+	local p={}
+	p.x=x
+	p.y=y
+	p.t=flr(rnd(7))+1
+	add(pups,p)
 end
 
 function checkexplosions()
@@ -1022,8 +1034,11 @@ function addpart(x,y,dx,dy,typ,maxage,col,s)
 end
 
 function shatterbrick(b,vx,vy)
+	if shake<.5 then
+		shake+=.07
+	end
+	
 	sfx(10)
-	shake+=.07
 	
 	--bump the brick
 	b.dx=vx*.7
@@ -1097,14 +1112,49 @@ function animatebricks()
 	end
 end
 
+--puff in powerup color
+function spawnpowpuff(x,y,t)
+	for i=1,20 do
+		local ang=rnd()
+		local dx=cos(ang)*(rnd(2)+1.2)
+		local dy=sin(ang)*(rnd(2)+1.2)
+		local col
+		
+  if t == 1 then
+   -- slowdown -- orange
+   col={9,9,4,4,0}
+  elseif t == 2 then
+   -- life -- red
+   col={8,8,2,2,0}
+  elseif t == 3 then
+   -- catch -- green
+   col={11,11,3,3,0}
+  elseif t == 4 then
+   -- expand -- blue
+   col={12,12,5,5,0}
+  elseif t == 5 then
+   -- reduce -- black
+   col={0,0,5,5,6}
+  elseif t == 6 then
+   -- megaball -- pink
+   col={14,14,13,2,0}
+  else
+   -- multiball -- red
+   col={8,8,4,2,0}
+  end  
+	
+		addpart(x,y,dx,dy,2,20+rnd(15),col,1+rnd(4))
+	end	
+end
+
 function spawnpuff(x,y)
 	for i=1,5 do
 		local ang=rnd()
 		local dx=cos(ang)*1.3
 		local dy=sin(ang)*1.3
 	
-		addpart(x,y,dx,dy,2,15+rnd(15),{12},1+rnd(2))
-	end	
+		addpart(x,y,dx,dy,2,15+rnd(15),{7,6,5},1+rnd(2))
+	end
 end
 
 function spawntrail(x,y)
@@ -1114,7 +1164,24 @@ function spawntrail(x,y)
 		local ox=cos(ang)*ball_r*.4
 		local oy=sin(ang)*ball_r*.4
 	
-		addpart(x+ox,y+oy,0,0,0,15+rnd(15),{10,9})
+		addpart(x+ox,y+oy,
+			0,0,
+			0,15+rnd(15),
+			{10,9},0)
+	end
+end
+
+function spawnmegatrail(x,y)
+	--reduces amt of parts
+	if rnd() then
+		local ang=rnd()
+		local ox=cos(ang)*ball_r
+		local oy=sin(ang)*ball_r
+	
+		addpart(x+ox,y+oy,
+			0,0,
+			2,30+rnd(15),
+			{14,2,5},1+rnd(2))
 	end
 end
 
