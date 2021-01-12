@@ -8,9 +8,9 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	levels[1]="b9bb9bb9bb9bb9bp9p"
-	--levels[1]="/x4b/s3b3s3/b9"
-	--levels[1]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
+	--levels[1]="b9bb9bb9bb9bb9bp9p"
+	levels[1]="/x4b/s3s3s3/b9"
+	levels[2]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 	
 	blink_col=7
@@ -176,7 +176,8 @@ function gameover()
 end
 
 function levelover()
-	mode="levelover"
+	mode="leveloverwait"
+	lover_count=60
 end
 
 function serveball()
@@ -377,6 +378,8 @@ function _draw()
 		--draw_game()
 	elseif mode=="levelover" then
 		draw_levelover()
+	elseif mode=="leveloverwait" then
+		draw_game()
 	end
 	
 	pal()
@@ -475,7 +478,7 @@ end
 function draw_levelover()
 	rectfill(0,60,128,76,0)
 	print("stage clear",46,62,7)
-	print("press ❎ to continue",27,70,7)
+	print("press ❎ to continue",27,70,blink_grey)
 end
 -->8
 function _update60()
@@ -493,6 +496,8 @@ function _update60()
 		update_levelover()
 	elseif mode=="gameoverwait" then
 		update_gameoverwait()
+	elseif mode=="leveloverwait" then
+		update_leveloverwait()
 	end
 end
 
@@ -540,10 +545,30 @@ function update_gameoverwait()
 	end
 end
 
-function update_levelover()
-	if btnp(5) then
-		nextlevel()
+function update_leveloverwait()
+	lover_count-=1
+	if lover_count<=0 then
+		lover_count=-1
+		mode="levelover"
 	end
+end
+
+function update_levelover()
+ if lover_count<0 then
+  if btnp(5) then
+   lover_count=80
+   blinkspeed=1
+   sfx(9)
+  end
+ else
+  lover_count-=1
+  fadeperc=(80-lover_count)/80
+  if lover_count<=0 then
+   lover_count= -1
+   blinkspeed=8
+   nextlevel()
+  end 
+ end
 end
 
 function update_game()
@@ -760,6 +785,7 @@ function updateball(i)
 	--ball missed paddle
 	if nexty>127 then
 		sfx(0)
+		spawndeath(b.x,b.y)
 		if #balls>1 then
 			shake+=0.1
 			del(balls,b)
@@ -881,6 +907,7 @@ function hitbrick(i,combo)
 	elseif brick=="s" then
 		--exploding
 		sfx(1+combo_mult)
+		shatterbrick(bricks[i],lasthitx,lasthity)
 		bricks[i].t="zz"
 		shake+=0.1
 		if combo then
@@ -901,15 +928,17 @@ end
 
 function checkexplosions()
 	for i=1,#bricks do
-		if bricks[i].t=="zz" then
+		if bricks[i].t=="zz" and bricks[i].v then
 			bricks[i].t="z"
 		end
 	end
 	
 	for i=1,#bricks do
-		if bricks[i].t=="z" then
+		local b=bricks[i]
+		if b.t=="z" and b.v then
 	
 			explodebrick(i)
+			spawnexplosion(b.x,b.y)
 		end
 	end
 	
@@ -1110,6 +1139,39 @@ function animatebricks()
 			end
 		end
 	end
+end
+
+function spawnexplosion(x,y)
+	--first smoke
+	for i=1,10 do
+		local ang=rnd()
+		local dx=cos(ang)*rnd(2)
+		local dy=sin(ang)*rnd(2)
+		local col={0,0,5,5,6}
+
+		addpart(x,y,dx,dy,2,10+rnd(15),col,1+rnd(4))
+	end
+	
+	--fireball
+	for i=1,15 do
+		local ang=rnd()
+		local dx=cos(ang)*(rnd(2)+1.2)
+		local dy=sin(ang)*(rnd(2)+1.2)
+		local col={7,10,9,8,5}
+
+		addpart(x,y,dx,dy,2,20+rnd(20),col,1+rnd(4))
+	end	
+end
+
+function spawndeath(x,y)
+	for i=1,20 do
+		local ang=rnd()
+		local dx=cos(ang)*(rnd(3)+1.2)
+		local dy=sin(ang)*(rnd(3)+1.2)
+		local col={10,10,9,4,0}
+
+		addpart(x,y,dx,dy,2,20+rnd(15),col,1+rnd(4))
+	end	
 end
 
 --puff in powerup color
