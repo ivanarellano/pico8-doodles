@@ -2,6 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 29
 __lua__
 function _init()
+	cartdata("breakout")
 	cls()
 	mode="start"
 	shake=0
@@ -12,6 +13,12 @@ function _init()
 	levels[1]="/x4b/s3s3s3/b9"
 	levels[2]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
+	
+	--highscore
+	hs={}
+	loadhs()
+	hs[1]=1000
+	savehs()
 	
 	blink_col=7
 	blink_col_i=1
@@ -267,6 +274,8 @@ function sign(n)
 	end
 end
 -->8
+--collision
+
 function ball_box(bx,by,box_x,box_y,box_w,box_h)
 	if by-ball_r > box_y+box_h then
 		return false
@@ -367,6 +376,8 @@ function deflx_ball_box(bx,by,bdx,bdy,tx,ty,tw,th)
 	return false
 end
 -->8
+--draw
+
 function _draw()
 	if mode=="game" then
 		draw_game()
@@ -465,7 +476,9 @@ end
 
 function draw_start()
 	cls()
-	print("pico hero breakout",30,40,7)
+	
+	prinths(35)
+	--print("pico hero breakout",30,40,7)
 	print("press ❎ to start",30,70,blink_col)
 end
 
@@ -481,6 +494,8 @@ function draw_levelover()
 	print("press ❎ to continue",27,70,blink_grey)
 end
 -->8
+--update
+
 function _update60()
 	doblink()
 	doshake()
@@ -961,6 +976,8 @@ function explodebrick(i)
 	end
 end
 -->8
+--juicyness
+
 function doshake()
 	-- -16 +16
 	local shakex=16-flr(rnd(32))
@@ -1337,6 +1354,53 @@ function drawparts()
 			
 			spr(p.col,p.x,p.y,1,1,fx,fy)
 		end
+	end
+end
+-->8
+--highscore
+
+function reseths()
+	hs={500,400,300,200,100}
+	savehs()
+end
+
+function loadhs()
+	local slot=0
+	
+	--flags: 1=there is data
+	--       0=no data
+	if dget(0)==1 then
+		slot+=1
+		for i=1,5 do
+			hs[i]=dget(slot)
+			slot+=1
+			
+		end
+		debug=hs[1]
+	else
+		--hs list is empty
+		reseths()
+	end
+end
+
+function savehs()
+	local slot=0
+	--1 indicates hs exists
+	dset(0,1)
+	
+	slot=1
+	for i=1,5 do
+		dset(slot,hs[i])
+		slot+=1
+	end
+end
+
+function prinths(x)
+	for i=1,5 do
+		print(i.." - ",x+10,10+7*i,7)
+		
+		local score=" "..hs[i]
+		print(score,x+50-(#score*4),10+7*i,7)
 	end
 end
 __gfx__
