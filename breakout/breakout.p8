@@ -21,6 +21,7 @@ function _init()
 	hs3={}
 	hsx=128
 	hsdx=128
+	loghs=false
 
 	loadhs()
 	hschars={"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"," "} 
@@ -32,6 +33,9 @@ function _init()
 	
 	blink_grey=7
 	blink_grey_i=1
+	
+	blink_w=7
+	blink_w_i=1
 	
 	start_count=-1
 	gover_count=-1
@@ -194,6 +198,13 @@ end
 function wingame()
 	mode="winnerwait"
 	lover_count=60
+	
+	--check if cur score is new hs
+	if points>hs[5] then
+		loghs=true
+	else
+		loghs=true
+	end
 end
 
 function serveball()
@@ -510,9 +521,32 @@ function draw_levelover()
 end
 
 function draw_winner()
-	rectfill(0,60,128,76,0)
-	print("congratulations!",34,62,7)
-	print("press ❎ for main menu",22,70,blink_grey)
+	if loghs then
+		--has a hs
+		local y=40
+		rectfill(0,y,128,y+52,14)
+	
+		print("★congratulations!★",24,y+4,blink_w)
+		print("you are a breakout hero.",14,y+12,7)
+		print("enter your initials for",16,y+18,7)
+		print("the high score list.",14,y+24,7)
+		print("mvm",56,y+36,2)
+		
+		--print("press ❎ for main menu",20,y+44,10)
+		print("use ⬅️➡️❎🅾️",36,y+44,2)
+	else
+		--not a hs
+		local y=40
+		rectfill(0,y,128,y+52,14)
+	
+		print("★congratulations!★",24,y+4,blink_w)
+		print("you are a breakout winner.",14,y+12,7)
+		print("however you didn't make",16,y+18,7)
+		print("it to the high score list.",14,y+24,7)
+		print("try again!",46,y+36,7)
+		
+		print("press ❎ for main menu",20,y+44,10)
+	end
 end
 -->8
 --update
@@ -1076,6 +1110,7 @@ end
 function doblink()
 	local col={3,11,10,7}
 	local grey_col={5,6,7,6}
+	local win_col={2,7,15,7}
 	
 	--text blink
 	blinkframe+=1
@@ -1092,6 +1127,12 @@ function doblink()
 			blink_grey_i=1
 		end
 		blink_grey=grey_col[blink_col_i]
+	
+		blink_w_i+=1
+		if blink_w_i>#win_col then
+			blink_w_i=1
+		end
+		blink_w=win_col[blink_w_i]
 	end
 	
 	--arrow anim
