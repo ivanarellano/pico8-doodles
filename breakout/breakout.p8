@@ -11,7 +11,7 @@ function _init()
 	levels={}
 	--levels[1]="b9bb9bb9bb9bb9bp9p"
 	levels[1]="/x4b/s3s3s3/b9"
-	levels[2]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
+	--levels[2]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 	
 	--highscore
@@ -19,6 +19,8 @@ function _init()
 	hs1={}
 	hs2={}
 	hs3={}
+	hsx=128
+	hsdx=128
 
 	loadhs()
 	hschars={"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"," "} 
@@ -34,7 +36,7 @@ function _init()
 	start_count=-1
 	gover_count=-1
 	
-	fadeperc=0
+	fadeperc=1
 	
 	arrowmult=1
 	arrowmult_2=1
@@ -93,7 +95,6 @@ function nextlevel()
 	
 	levelnum+=1
 	if levelnum>#levels then
-		--finished game
 		mode="start"
 		return
 	end
@@ -187,6 +188,11 @@ end
 
 function levelover()
 	mode="leveloverwait"
+	lover_count=60
+end
+
+function wingame()
+	mode="winnerwait"
 	lover_count=60
 end
 
@@ -394,6 +400,10 @@ function _draw()
 		draw_levelover()
 	elseif mode=="leveloverwait" then
 		draw_game()
+	elseif mode=="winner" then
+		draw_winner()
+	elseif mode=="winnerwait" then
+		draw_game()
 	end
 	
 	pal()
@@ -480,9 +490,11 @@ end
 function draw_start()
 	cls()
 	
-	prinths(20)
-	--print("pico hero breakout",30,40,7)
+	prinths(hsx)
+	
+	print("pico hero breakout",hsx-100,40,7)
 	print("press ❎ to start",30,70,blink_col)
+	print("press ⬅️ to see high scores",9,87,11)
 end
 
 function draw_gameover()
@@ -495,6 +507,12 @@ function draw_levelover()
 	rectfill(0,60,128,76,0)
 	print("stage clear",46,62,7)
 	print("press ❎ to continue",27,70,blink_grey)
+end
+
+function draw_winner()
+	rectfill(0,60,128,76,0)
+	print("congratulations!",34,62,7)
+	print("press ❎ for main menu",22,70,blink_grey)
 end
 -->8
 --update
@@ -510,21 +528,46 @@ function _update60()
 		update_start()
 	elseif mode=="gameover" then
 		update_gameover()
-	elseif mode=="levelover" then
-		update_levelover()
 	elseif mode=="gameoverwait" then
 		update_gameoverwait()
+	elseif mode=="levelover" then
+		update_levelover()
 	elseif mode=="leveloverwait" then
 		update_leveloverwait()
+	elseif mode=="winner" then
+		update_winner()
+	elseif mode=="winnerwait" then
+		update_winnerwait()
 	end
 end
 
 function update_start()
+	--slide high score list
+	if hsx!=hsdx then
+		--ease in
+		hsx+=(hsdx-hsx)/5
+	end
+	
+		--fade in game
+	if fadeperc!=0 then
+		fadeperc-=.05
+		if fadeperc<0 then
+			fadeperc=0
+		end
+	end
+	
 	if start_count<0 then
-		if btn(5) then
+		if btnp(5) then
 			sfx(9)
 			start_count=80
 			blinkspeed=1
+		end
+		
+		if btnp(0) then
+			hsdx=20
+		end
+		if btnp(1) then
+			hsdx=128
 		end
 	else
 		start_count-=1
@@ -571,7 +614,33 @@ function update_leveloverwait()
 	end
 end
 
+function update_winnerwait()
+	lover_count-=1
+	if lover_count<=0 then
+		lover_count=-1
+		mode="winner"
+	end
+end
+
 function update_levelover()
+ if lover_count<0 then
+  if btnp(5) then
+   lover_count=80
+   blinkspeed=1
+   sfx(9)
+  end
+ else
+  lover_count-=1
+  fadeperc=(80-lover_count)/80
+  if lover_count<=0 then
+   lover_count= -1
+   blinkspeed=8
+   mode="start"
+  end 
+ end
+end
+
+function update_winner()
  if lover_count<0 then
   if btnp(5) then
    lover_count=80
@@ -662,7 +731,12 @@ function update_game()
 	
 	if levelfinished() then
 		_draw()
-		levelover()
+		
+		if levelnum>=#levels then
+			wingame()
+		else
+			levelover()
+		end
 	end
 	
 	--powerup timers
@@ -1385,7 +1459,6 @@ function loadhs()
 			slot+=4
 			
 		end
-		debug=hs[1]
 	else
 		--hs list is empty
 		reseths()
@@ -1416,13 +1489,18 @@ function prinths(x)
 		--rank
 		print(i.." - ",x+10,15+7*i,5)
 		
+		local c=7
+		if i==1 then
+			c=blink_grey
+		end
+		
 		--name
 		local name=""..hschars[hs1[i]]..hschars[hs2[i]]..hschars[hs3[i]]
-		print(name,x+30,15+i*7,7)
+		print(name,x+30,15+i*7,c)
 		
 		--score
 		local score=" "..hs[i]
-		print(score,x+78-(#score*4),15+7*i,7)
+		print(score,x+78-(#score*4),15+7*i,c)
 	end
 end
 
