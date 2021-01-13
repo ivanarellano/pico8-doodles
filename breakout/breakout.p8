@@ -16,9 +16,12 @@ function _init()
 	
 	--highscore
 	hs={}
+	hs1={}
+	hs2={}
+	hs3={}
+
 	loadhs()
-	hs[1]=1000
-	savehs()
+	hschars={"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"," "} 
 	
 	blink_col=7
 	blink_col_i=1
@@ -477,7 +480,7 @@ end
 function draw_start()
 	cls()
 	
-	prinths(35)
+	prinths(20)
 	--print("pico hero breakout",30,40,7)
 	print("press ❎ to start",30,70,blink_col)
 end
@@ -1361,6 +1364,9 @@ end
 
 function reseths()
 	hs={500,400,300,200,100}
+	hs1={9,13,10,1,1}
+	hs2={1,22,12,1,1}
+	hs3={27,13,1,1,1}
 	savehs()
 end
 
@@ -1373,7 +1379,10 @@ function loadhs()
 		slot+=1
 		for i=1,5 do
 			hs[i]=dget(slot)
-			slot+=1
+			hs1[i]=dget(slot+1)
+			hs2[i]=dget(slot+2)
+			hs3[i]=dget(slot+3)
+			slot+=4
 			
 		end
 		debug=hs[1]
@@ -1391,18 +1400,55 @@ function savehs()
 	slot=1
 	for i=1,5 do
 		dset(slot,hs[i])
-		slot+=1
+		dset(slot+1,hs1[i])
+		dset(slot+2,hs2[i])
+		dset(slot+3,hs3[i])
+		
+		slot+=4
 	end
 end
 
 function prinths(x)
+	rectfill(x+10,8,x+78,16,12)
+	print("high score list",x+15,10,7)
+
 	for i=1,5 do
-		print(i.." - ",x+10,10+7*i,7)
+		--rank
+		print(i.." - ",x+10,15+7*i,5)
 		
+		--name
+		local name=""..hschars[hs1[i]]..hschars[hs2[i]]..hschars[hs3[i]]
+		print(name,x+30,15+i*7,7)
+		
+		--score
 		local score=" "..hs[i]
-		print(score,x+50-(#score*4),10+7*i,7)
+		print(score,x+78-(#score*4),15+7*i,7)
 	end
 end
+
+--sort high score list
+--ia: class sort would be nice
+function sorths()
+ for i=1,#hs do
+  local j = i
+  while j > 1 and hs[j-1] < hs[j] do
+   hs[j],hs[j-1]=hs[j-1],hs[j]
+   hs1[j],hs1[j-1]=hs1[j-1],hs1[j]
+   hs2[j],hs2[j-1]=hs2[j-1],hs2[j]
+   hs3[j],hs3[j-1]=hs3[j-1],hs3[j]
+   j = j - 1
+  end
+ end
+end
+
+function addhs(score,chars)
+ add(hs,score)
+ add(hs1,chars[1])
+ add(hs2,chars[2])
+ add(hs3,chars[3])
+ sorths()
+end
+
 __gfx__
 0000000006777760067777600677776006777760b677776b06777760067777600000000000000000000000000000000000000000000000000000000000000000
 00000000659449556582885565bbbb5565cccc556500005565eeee5565aaaa550000000000000000000000000000000000000000000000000000000000000000
