@@ -635,7 +635,7 @@ function update_levelover()
   if lover_count<=0 then
    lover_count= -1
    blinkspeed=8
-   mode="start"
+   nextlevel()
   end 
  end
 end
@@ -653,7 +653,9 @@ function update_winner()
   if lover_count<=0 then
    lover_count= -1
    blinkspeed=8
-   nextlevel()
+			mode="start"
+   hsx=128
+   hsdx=20
   end 
  end
 end
