@@ -19,6 +19,9 @@ function _init()
 	hs1={}
 	hs2={}
 	hs3={}
+	--blink index
+	hsb_idx=1
+	hsb={true,false,false,false,false}
 	hsx=128
 	hsdx=128
 	loghs=false
@@ -89,6 +92,8 @@ function startgame()
 	timer_slow=0
 	timer_expand=0
 	timer_reduce=0
+	
+	hsb_idx=1
 	
 	serveball()
 end
@@ -194,6 +199,7 @@ function gameover()
 	mode="gameoverwait"
 	gover_count=60
 	blinkspeed=16
+	reset_hsblink()
 end
 
 function levelover()
@@ -204,6 +210,7 @@ end
 function wingame()
 	mode="winnerwait"
 	lover_count=60
+
 	
 	--check if cur score is new hs
 	if points>hs[5] then
@@ -211,7 +218,9 @@ function wingame()
 		ini_sel=1
 		ini_conf=false
 	else
+		--won, but no high score
 		loghs=false
+		reset_hsblink()
 	end
 end
 
@@ -513,7 +522,12 @@ function draw_start()
 	
 	print("pico hero breakout",hsx-100,40,7)
 	print("press ❎ to start",30,70,blink_col)
-	print("press ⬅️ to see high scores",9,87,11)
+	
+	--check where high score is
+	--to display message
+	if hsx==128 then
+		print("press ⬅️ to see high scores",9,87,11)
+	end
 end
 
 function draw_gameover()
@@ -601,6 +615,10 @@ function update_start()
 	if hsx!=hsdx then
 		--ease in
 		hsx+=(hsdx-hsx)/5
+		
+		if abs(hsdx-hsx)<0.3 then
+			hsx=hsdx
+		end
 	end
 	
 		--fade in game
@@ -619,9 +637,15 @@ function update_start()
 		end
 		
 		if btnp(0) then
+			if hsx==128 then
+				sfx(12)
+			end
 			hsdx=20
 		end
 		if btnp(1) then
+			if hsx==20 then
+				sfx(12)
+			end
 			hsdx=128
 		end
 	else
@@ -701,6 +725,7 @@ function update_winner()
  	if loghs then
  		if btnp(0) then
  			--left
+ 			sfx(13)
  			ini_conf=false
  			ini_sel-=1
  			if ini_sel<1 then
@@ -709,6 +734,7 @@ function update_winner()
  		end
  		if btnp(1) then
  			--right
+ 			sfx(13)
  			ini_conf=false
  			ini_sel+=1
  			if ini_sel>3 then
@@ -716,6 +742,7 @@ function update_winner()
  			end
  		end
  		if btnp(3) then
+ 			sfx(12)
  			ini_conf=false
  			initials[ini_sel]-=1
  			if initials[ini_sel]<1 then
@@ -723,6 +750,7 @@ function update_winner()
  			end
  		end
  		if btnp(2) then
+ 			sfx(12)
  			ini_conf=false
  		 initials[ini_sel]+=1
  			if initials[ini_sel]>#hschars then
@@ -1562,6 +1590,7 @@ function reseths()
 	hs1={9,13,10,1,1}
 	hs2={1,22,12,1,1}
 	hs3={27,13,1,1,1}
+	hsb={true,false,false,false,false}
 	savehs()
 end
 
@@ -1611,7 +1640,7 @@ function prinths(x)
 		print(i.." - ",x+10,15+7*i,5)
 		
 		local c=7
-		if i==1 then
+		if hsb[i] then
 			c=blink_grey
 		end
 		
@@ -1625,6 +1654,13 @@ function prinths(x)
 	end
 end
 
+function reset_hsblink()
+	for i=1,#hsb do
+		hsb[i]=false
+	end
+	hsb[1]=true
+end
+
 --sort high score list
 --ia: class sort would be nice
 function sorths()
@@ -1635,6 +1671,7 @@ function sorths()
    hs1[j],hs1[j-1]=hs1[j-1],hs1[j]
    hs2[j],hs2[j-1]=hs2[j-1],hs2[j]
    hs3[j],hs3[j-1]=hs3[j-1],hs3[j]
+   hsb[j],hsb[j-1]=hsb[j-1],hsb[j]
    j = j - 1
   end
  end
@@ -1645,6 +1682,10 @@ function addhs(score,chars)
  add(hs1,chars[1])
  add(hs2,chars[2])
  add(hs3,chars[3])
+ for i=1,#hsb do
+ 	hsb[i]=false
+ end
+ add(hsb,true)
  sorths()
 end
 
@@ -1694,3 +1735,5 @@ __sfx__
 000300001875018750287502875018750187502875028750197501975028750287500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000400002c6301f6201a620156200f6100b6100461002610000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000200001752017520165202e5502e5502e550125201352014520135202c5502c5502d5502d5501552014520155201a0001a0001b0001e0002100025000290002a000290001d00027000240001e0001700012000
+000400001b3501f350003000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000600003105031050250502505000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
