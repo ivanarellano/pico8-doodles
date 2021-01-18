@@ -9,8 +9,8 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	--levels[1]="b9bb9bb9bb9bb9bp9p"
-	levels[1]="/i4b4/b3s3s3/h3p3h5"
+	levels[1]="ss9ss9bb9bs9p"
+	levels[2]="/s4b4/b3s3s3/h3p3h5"
 	--levels[2]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 	
@@ -44,6 +44,8 @@ function _init()
 	start_count=-1
 	gover_count=-1
 	
+	goverrestart=false
+	
 	fadeperc=1
 	
 	arrowmult=1
@@ -60,6 +62,13 @@ function _init()
 	initials={1,1,1}
 	ini_sel=1
 	ini_conf=false
+	
+	sash_w=0
+	sash_dw=0 --dest width
+	sash_c=0		--col
+	sash_frames=0
+	sash_text="hello sash"
+	sash_v=false
 end
 
 function startgame()
@@ -83,7 +92,7 @@ function startgame()
 	
 	makebricks(level)
 	
-	lives=3
+	lives=2
 	points=0
 	
 	sticky=false
@@ -118,6 +127,8 @@ function nextlevel()
 	
 	makebricks(level)
 	
+	--sash_dw=128
+	showsash("stage "..levelnum,0)
 	serveball()
 end
 
@@ -440,6 +451,13 @@ function _draw()
 	end
 end
 
+function draw_sash()
+	if sash_v then
+		--x0, y0, x1, y1, [col]
+		rectfill(0,64-sash_w,128,64+sash_w,sash_c)
+	end
+end
+
 function draw_game()	
 	cls()
 	rectfill(0,0,127,127,1)
@@ -545,6 +563,8 @@ function draw_game()
 		combo_str=""..combo_mult.."x"
 	end
 	print("combo:"..combo_str,90,1,7)
+
+	draw_sash()
 end
 
 function draw_start()
@@ -565,9 +585,22 @@ function draw_start()
 end
 
 function draw_gameover()
-	rectfill(0,60,128,76,0)
+	rectfill(0,60,128,82,0)
 	print("game over",46,62,7)
-	print("press ❎ to restart",27,70,blink_grey)
+	
+	local c1=blink_grey
+	local c2=blink_grey
+	if gover_count>0 then
+		if goverrestart then
+			c2=7
+		else
+			c1=7
+		end
+	else
+
+	end
+	print("press ❎ to restart",27,70,c1)
+	print("press 🅾️ for main menu",19,76,c2)
 end
 
 function draw_levelover()
@@ -624,6 +657,7 @@ function _update60()
 	doblink()
 	doshake()
 	updateparts()
+	update_sash()
 	
 	if mode=="game" then
 		update_game()
@@ -641,6 +675,27 @@ function _update60()
 		update_winner()
 	elseif mode=="winnerwait" then
 		update_winnerwait()
+	end
+end
+
+function update_sash()
+	if sash_v==false then
+		return
+	end
+	
+	sash_frames+=1
+	
+	sash_w+=(sash_dw-sash_w)/5
+	if abs(sash_dw-sash_w)<.3 then
+		sash_w=sash_dw
+	end
+	
+	if sash_frames>60 then
+		sash_dw=0
+	end
+	
+	if sash_frames>90 then
+		sash_v=false
 	end
 end
 
@@ -699,14 +754,27 @@ function update_gameover()
    gover_count=80
    blinkspeed=1
    sfx(9)
+   goverrestart=true
+  end
+  if btnp(4) then
+   gover_count=80
+   blinkspeed=1
+   sfx(9)
+   goverrestart=false
   end
  else
   gover_count-=1
   fadeperc=(80-gover_count)/80
   if gover_count<=0 then
-   gover_count= -1
-   blinkspeed=8
-   startgame()
+  	 gover_count= -1
+	   blinkspeed=8
+  	if goverrestart then
+	   startgame()
+   else
+   	mode="start"
+   	hsx=128
+   	hsdx=128
+   end
   end 
  end
 end
@@ -1060,6 +1128,7 @@ function updateball(i)
 			shake+=0.4
 			lives-=1
 			if lives<0 then
+				lives=0
 				gameover()
 			else
 				serveball()
@@ -1233,6 +1302,15 @@ function explodebrick(i)
 end
 -->8
 --juicyness
+
+function showsash(txt,bgcol)
+	sash_w=0
+	sash_dw=9
+	sash_c=bgcol
+	sash_frames=0
+	sash_text=txt
+	sash_v=true
+end
 
 function doshake()
 	-- -16 +16
