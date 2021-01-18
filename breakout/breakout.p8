@@ -9,8 +9,8 @@ function _init()
 	level=""
 	levelnum=1
 	levels={}
-	levels[1]="ss9ss9bb9bs9p"
-	levels[2]="/s4b4/b3s3s3/h3p3h5"
+	levels[1]="sb9sb9ps3p9p"
+	levels[2]="/s4b4/s3b3/h3p3h5"
 	--levels[2]="bxhxsxixpxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbxbx"
 	debug=""
 	
@@ -65,10 +65,15 @@ function _init()
 	
 	sash_w=0
 	sash_dw=0 --dest width
-	sash_c=0		--col
+	sash_tx=0
+	sash_tdx=0 --dest width
+	sash_c=0		--bg col
+	sash_tc=7 --txt col
 	sash_frames=0
 	sash_text="hello sash"
 	sash_v=false
+	sash_delay_w=0
+	sash_delay_t=0
 end
 
 function startgame()
@@ -104,6 +109,8 @@ function startgame()
 	
 	hsb_idx=1
 	
+	showsash("stage "..levelnum,0,7)
+	
 	serveball()
 end
 
@@ -127,8 +134,7 @@ function nextlevel()
 	
 	makebricks(level)
 	
-	--sash_dw=128
-	showsash("stage "..levelnum,0)
+	showsash("stage "..levelnum,0,7)
 	serveball()
 end
 
@@ -455,6 +461,7 @@ function draw_sash()
 	if sash_v then
 		--x0, y0, x1, y1, [col]
 		rectfill(0,64-sash_w,128,64+sash_w,sash_c)
+		print(sash_text,sash_tx,62,sash_tc)
 	end
 end
 
@@ -685,16 +692,35 @@ function update_sash()
 	
 	sash_frames+=1
 	
-	sash_w+=(sash_dw-sash_w)/5
-	if abs(sash_dw-sash_w)<.3 then
-		sash_w=sash_dw
+	--animate width
+	if sash_delay_w>0 then
+		sash_delay_w-=1
+	else
+		sash_w+=(sash_dw-sash_w)/5
+		if abs(sash_dw-sash_w)<.3 then
+			sash_w=sash_dw
+		end
 	end
 	
-	if sash_frames>60 then
+	--animate text
+	if sash_delay_t>0 then
+		sash_delay_t-=1
+	else
+		sash_tx+=(sash_tdx-sash_tx)/8
+		if abs(sash_tdx-sash_tx)<.3 then
+			sash_tx=sash_tdx
+		end
+	end
+	
+	--sashay away
+	if sash_frames==75 then
 		sash_dw=0
+		sash_tdx=256
+		sash_delay_w=10
+		sash_delay_t=0
 	end
 	
-	if sash_frames>90 then
+	if sash_frames>115 then
 		sash_v=false
 	end
 end
@@ -1160,12 +1186,15 @@ function applypower(p)
 	if p==1 then
 		--slowdown
 		timer_slow=900
+		showsash("slowdown!",9,4)
 	elseif p==2 then
 		--life
 		lives+=1
+		showsash("extra life!",8,2)
 	elseif p==3 then
 		--catch
 		--check for stuck balls
+		showsash("sticky ball!",11,3)
 		hasstuck=false
 		for i=1,#balls do
 			if balls[i].stuck then
@@ -1179,17 +1208,30 @@ function applypower(p)
 		--expand
 		timer_expand=900
 		timer_reduce=0
+		showsash("expand!",12,1)
 	elseif p==5 then
 		--reduce
 		timer_reduce=900
 		timer_expand=0
+		showsash("reduce!",0,8)
 	elseif p==6 then
 		--megaball
 		timer_mega=300
+		showsash("mega ball!",14,2)
 	elseif p==7 then
 		--multiball
 		multiball()
+		showsash("multi ball!",10,9)
 	end
+end
+
+--increase chain by one
+function boostchain()
+	if combo_mult==6 then
+		showsash("sick!",12,1)
+	end
+	combo_mult+=1
+	combo_mult=mid(1,combo_mult,6)
 end
 
 function hitbrick(i,combo)
@@ -1205,8 +1247,7 @@ function hitbrick(i,combo)
 		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
-			combo_mult+=1
-			combo_mult=mid(1,combo_mult,6)
+			boostchain()
 		end
 	elseif brick=="i" then
 		--indestructible
@@ -1219,8 +1260,7 @@ function hitbrick(i,combo)
 			bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
-			combo_mult+=1
-			combo_mult=mid(1,combo_mult,6)
+			boostchain()
 		end
 		else
 			sfx(8)
@@ -1240,8 +1280,7 @@ function hitbrick(i,combo)
 		bricks[i].v=false
 		if combo then
 			points+=10*combo_mult*points_mult
-			combo_mult+=1
-			combo_mult=mid(1,combo_mult,6)
+			boostchain()
 		end
 		spawnpowerup(bricks[i].x,bricks[i].y)	
 	elseif brick=="s" then
@@ -1252,8 +1291,7 @@ function hitbrick(i,combo)
 		shake+=0.1
 		if combo then
 			points+=10*combo_mult*points_mult
-			combo_mult+=1
-			combo_mult=mid(1,combo_mult,6)
+			boostchain()
 		end
 	end
 end
@@ -1303,13 +1341,18 @@ end
 -->8
 --juicyness
 
-function showsash(txt,bgcol)
+function showsash(txt,bc,tc)
 	sash_w=0
-	sash_dw=9
-	sash_c=bgcol
+	sash_dw=4
+	sash_c=bc
+	sash_tc=tc
 	sash_frames=0
 	sash_text=txt
 	sash_v=true
+	sash_tx=-#sash_text*4
+	sash_tdx=64-(#sash_text*2)
+	sash_delay_w=0
+	sash_delay_t=15
 end
 
 function doshake()
